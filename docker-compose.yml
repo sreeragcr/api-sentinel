@@ -1,0 +1,61 @@
+
+name: api-sentinel
+
+services:
+  api:
+    build:
+      context: .
+      dockerfile: infrastructure/docker/node/Dockerfile.dev
+
+    working_dir: /workspace
+
+    command:
+      - sh
+      - -lc
+      - pnpm install && pnpm --filter @api-sentinel/api start:dev
+
+    ports:
+      - "3000:3000"
+
+    volumes:
+      - .:/workspace
+      - root_node_modules:/workspace/node_modules
+      - api_node_modules:/workspace/apps/api/node_modules
+      - pnpm_store:/pnpm/store
+
+    environment:
+      NODE_ENV: development
+      npm_config_store_dir: /pnpm/store
+      DATABASE_URL: postgresql://${POSTGRES_USER:-api_sentinel}:${POSTGRES_PASSWORD:-dev_only_password}@db:5432/${POSTGRES_DB:-api_sentinel}?schema=public
+
+    depends_on:
+      db:
+        condition: service_healthy
+
+    init: true
+
+  db:
+    image: postgres:17-alpine
+    restart: unless-stopped
+
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-api_sentinel}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-dev_only_password}
+      POSTGRES_DB: ${POSTGRES_DB:-api_sentinel}
+
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - pg_isready -U ${POSTGRES_USER:-api_sentinel} -d ${POSTGRES_DB:-api_sentinel}
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  root_node_modules:
+  api_node_modules:
+  pnpm_store:
+  postgres_data:

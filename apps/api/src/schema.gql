@@ -1,0 +1,37 @@
+# ------------------------------------------------------
+# THIS FILE WAS AUTOMATICALLY GENERATED (DO NOT MODIFY)
+# ------------------------------------------------------
+
+input CreateWorkspaceInput {
+  description: String
+  name: String!
+}
+
+"""
+A date-time string at UTC, such as 2019-12-03T09:54:33Z, compliant with the date-time format.
+"""
+scalar DateTime
+
+type HealthModel {
+  service: String!
+  status: String!
+  timestamp: String!
+  uptimeSeconds: Int!
+}
+
+type Mutation {
+  createWorkspace(input: CreateWorkspaceInput!): WorkspaceModel!
+}
+
+type Query {
+  health: HealthModel!
+}
+
+type WorkspaceModel {
+  createdAt: DateTime!
+  description: String
+  id: ID!
+  name: String!
+  slug: String!
+  updatedAt: DateTime!
+}

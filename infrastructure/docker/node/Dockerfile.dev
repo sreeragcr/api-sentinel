@@ -1,0 +1,23 @@
+
+FROM node:24.22.1-bookworm-slim
+
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends openssl \
+    && rm -rf /var/lib/apt/lists/* \
+    && npm install --global pnpm@12.16.1 \
+    && mkdir -p /pnpm/store \
+        /workspace/node_modules \
+        /workspace/apps/api/node_modules \
+    && chown -R node:node /pnpm /workspace
+
+ENV PNPM_HOME=/pnpm
+ENV PATH="${PNPM_HOME}:${PATH}"
+ENV npm_config_store_dir=/pnpm/store
+
+WORKDIR /workspace
+
+USER node
+
+EXPOSE 3000
+
+CMD ["sh"]
