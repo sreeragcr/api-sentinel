@@ -4,6 +4,7 @@ import { AppService } from './app.service.js';
 import { HealthModule } from './modules/health/health.module.js';
 import { PrismaModule } from './shared/infrastructure/database/prisma.module.js';
 import { WorkspaceModule } from './modules/workspace/workspace.module.js';
+import { ProjectModule } from './modules/project/project.module.js';
 import { join } from 'node:path';
 import {
   ApolloDriver,
@@ -21,6 +22,7 @@ import { GraphQLModule } from '@nestjs/graphql';
       autoSchemaFile: join(process.cwd(), 'src/schema.gql'),
       sortSchema: true,
     }),
+    ProjectModule,
   ],
   controllers: [AppController],
   providers: [AppService],

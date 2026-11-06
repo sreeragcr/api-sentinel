@@ -2,6 +2,12 @@
 # THIS FILE WAS AUTOMATICALLY GENERATED (DO NOT MODIFY)
 # ------------------------------------------------------
 
+input CreateProjectInput {
+  description: String
+  name: String!
+  workspaceId: String!
+}
+
 input CreateWorkspaceInput {
   description: String
   name: String!
@@ -20,7 +26,18 @@ type HealthModel {
 }
 
 type Mutation {
+  createProject(input: CreateProjectInput!): ProjectModel!
   createWorkspace(input: CreateWorkspaceInput!): WorkspaceModel!
+}
+
+type ProjectModel {
+  createdAt: DateTime!
+  description: String
+  id: ID!
+  name: String!
+  slug: String!
+  updatedAt: DateTime!
+  workspaceId: ID!
 }
 
 type Query {

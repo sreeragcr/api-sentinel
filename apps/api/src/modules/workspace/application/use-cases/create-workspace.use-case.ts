@@ -1,4 +1,3 @@
-// Workspace creation use case.
 
 import { randomUUID } from 'node:crypto';
 
@@ -8,6 +7,8 @@ import {
 } from '../../domain/entities/workspace.entity.js';
 
 import { WorkspaceRepository } from '../ports/workspace.repository.js';
+
+import { generateSlug } from '../../../../shared/domain/utils/slug.util.js';
 
 interface CreateWorkspaceInput {
   name: string;
@@ -20,16 +21,7 @@ export class CreateWorkspaceUseCase {
   ) {}
 
   async execute(input: CreateWorkspaceInput): Promise<Workspace> {
-    const name = input.name.trim();
-
-    const slug = name
-      .normalize('NFKD')
-      .replace(/[\u0300-\u036f]/g, '')
-      .toLowerCase()
-      .replace(/[^a-z0-9]+/g, '-')
-      .replace(/^-|-$/g, '')
-      .slice(0, 60)
-      .replace(/-+$/g, '');
+    const slug = generateSlug(input.name);
 
     if (!slug) {
       throw new InvalidWorkspaceError(
@@ -39,9 +31,9 @@ export class CreateWorkspaceUseCase {
 
     const workspace = Workspace.create({
       id: randomUUID(),
-      name,
+      name: input.name,
       slug,
-      description: input.description ?? null,
+      description: input.description,
     });
 
     return this.workspaceRepository.save(workspace);

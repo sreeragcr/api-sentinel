@@ -1,4 +1,3 @@
-
 generator client {
   provider = "prisma-client"
   output   = "../src/generated/prisma"
@@ -9,13 +8,32 @@ datasource db {
 }
 
 model Workspace {
-  id          String   @id @default(uuid()) @db.Uuid
-  name        String   @db.VarChar(120)
-  slug        String   @unique @db.VarChar(60)
-  description String?  @db.VarChar(500)
+  id          String  @id @default(uuid()) @db.Uuid
+  name        String  @db.VarChar(120)
+  slug        String  @unique @db.VarChar(60)
+  description String? @db.VarChar(500)
 
-  createdAt   DateTime @default(now()) @map("created_at")
-  updatedAt   DateTime @updatedAt @map("updated_at")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  projects Project[]
 
   @@map("workspaces")
+}
+
+model Project {
+  id          String @id @default(uuid()) @db.Uuid
+  workspaceId String @map("workspace_id") @db.Uuid
+
+  name        String  @db.VarChar(120)
+  slug        String  @db.VarChar(60)
+  description String? @db.VarChar(500)
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Restrict)
+
+  @@unique([workspaceId, slug])
+  @@map("projects")
 }
