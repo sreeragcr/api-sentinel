@@ -1,5 +1,4 @@
 
-
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { BadRequestException } from '@nestjs/common';
@@ -7,9 +6,17 @@ import { GraphQLError } from 'graphql';
 
 import { ProjectResolver } from './project.resolver.js';
 
-import {
+import type {
   CreateProjectUseCase,
 } from '../../application/use-cases/create-project.use-case.js';
+
+import type {
+  GetProjectByIdUseCase,
+} from '../../application/use-cases/get-project-by-id.use-case.js';
+
+import type {
+  GetProjectsByWorkspaceUseCase,
+} from '../../application/use-cases/get-projects-by-workspace.use-case.js';
 
 import {
   Project,
@@ -21,15 +28,37 @@ import {
 } from '../../application/errors/project-slug-already-exists.error.js';
 
 import {
+  ProjectNotFoundError,
+} from '../../application/errors/project-not-found.error.js';
+
+import {
   WorkspaceNotFoundError,
 } from '../../application/errors/workspace-not-found.error.js';
 
 describe('ProjectResolver', () => {
+  // Create Project use case mock
   const execute = vi.fn<CreateProjectUseCase['execute']>();
 
+  // Get Project by ID use case mock
+  const getProjectById =
+    vi.fn<GetProjectByIdUseCase['execute']>();
+
+  // Get Projects by Workspace use case mock
+  const getProjectsByWorkspace =
+    vi.fn<GetProjectsByWorkspaceUseCase['execute']>();
+
+  // Mock use case dependencies
   const useCase = {
     execute,
   } as unknown as CreateProjectUseCase;
+
+  const getProjectByIdUseCase = {
+    execute: getProjectById,
+  } as unknown as GetProjectByIdUseCase;
+
+  const getProjectsByWorkspaceUseCase = {
+    execute: getProjectsByWorkspace,
+  } as unknown as GetProjectsByWorkspaceUseCase;
 
   let resolver: ProjectResolver;
 
@@ -39,21 +68,38 @@ describe('ProjectResolver', () => {
     description: 'Backend API testing project',
   };
 
+  const createProject = (
+    id = 'project-123',
+    name = 'Backend API',
+    slug = 'backend-api',
+  ) =>
+    Project.create({
+      id,
+      workspaceId: 'workspace-123',
+      name,
+      slug,
+      description: 'Backend API testing project',
+    });
+
   beforeEach(() => {
     execute.mockReset();
+    getProjectById.mockReset();
+    getProjectsByWorkspace.mockReset();
 
-    resolver = new ProjectResolver(useCase);
+    resolver = new ProjectResolver(
+      useCase,
+      getProjectByIdUseCase,
+      getProjectsByWorkspaceUseCase,
+    );
   });
+
+  // --------------------------------------------------
+  // CREATE PROJECT MUTATION
+  // --------------------------------------------------
 
   describe('createProject()', () => {
     it('should create a project successfully', async () => {
-      const project = Project.create({
-        id: 'project-123',
-        workspaceId: 'workspace-123',
-        name: 'Backend API',
-        slug: 'backend-api',
-        description: 'Backend API testing project',
-      });
+      const project = createProject();
 
       execute.mockResolvedValue(project);
 
@@ -114,6 +160,137 @@ describe('ProjectResolver', () => {
 
       await expect(
         resolver.createProject(input),
+      ).rejects.toBe(unexpectedError);
+    });
+  });
+
+  // --------------------------------------------------
+  // GET PROJECT BY ID QUERY
+  // --------------------------------------------------
+
+  describe('getProject()', () => {
+    it('should return a project successfully', async () => {
+      const project = createProject();
+
+      getProjectById.mockResolvedValue(project);
+
+      const result = await resolver.getProject('project-123');
+
+      expect(getProjectById).toHaveBeenCalledWith('project-123');
+      expect(result).toBe(project);
+    });
+
+    it('should translate project not found error into GraphQL NOT_FOUND', async () => {
+      getProjectById.mockRejectedValue(
+        new ProjectNotFoundError('missing-project'),
+      );
+
+      await expect(
+        resolver.getProject('missing-project'),
+      ).rejects.toMatchObject({
+        message: 'Project "missing-project" does not exist',
+        extensions: {
+          code: 'NOT_FOUND',
+        },
+      });
+    });
+
+    it('should propagate unexpected errors', async () => {
+      const unexpectedError = new Error('Database unavailable');
+
+      getProjectById.mockRejectedValue(unexpectedError);
+
+      await expect(
+        resolver.getProject('project-123'),
+      ).rejects.toBe(unexpectedError);
+    });
+  });
+
+  // --------------------------------------------------
+  // GET PROJECTS BY WORKSPACE QUERY
+  // --------------------------------------------------
+
+  describe('getProjectsByWorkspace()', () => {
+    const workspaceInput = {
+      workspaceId: 'workspace-123',
+      offset: 0,
+      limit: 20,
+    };
+
+    it('should return projects belonging to a workspace', async () => {
+      const projects = [
+        createProject(
+          'project-123',
+          'Backend API',
+          'backend-api',
+        ),
+        createProject(
+          'project-456',
+          'Frontend App',
+          'frontend-app',
+        ),
+      ];
+
+      const resultData = {
+        items: projects,
+        totalCount: 2,
+      };
+
+      getProjectsByWorkspace.mockResolvedValue(resultData);
+
+      const result = await resolver.getProjectsByWorkspace(
+        workspaceInput,
+      );
+
+      expect(getProjectsByWorkspace).toHaveBeenCalledWith(
+        workspaceInput,
+      );
+
+      expect(result.items).toHaveLength(2);
+      expect(result.totalCount).toBe(2);
+      expect(result.items[0].name).toBe('Backend API');
+      expect(result.items[1].name).toBe('Frontend App');
+    });
+
+    it('should return an empty list when workspace has no projects', async () => {
+      getProjectsByWorkspace.mockResolvedValue({
+        items: [],
+        totalCount: 0,
+      });
+
+      const result = await resolver.getProjectsByWorkspace(
+        workspaceInput,
+      );
+
+      expect(result.items).toEqual([]);
+      expect(result.totalCount).toBe(0);
+    });
+
+    it('should translate workspace not found error into GraphQL NOT_FOUND', async () => {
+      getProjectsByWorkspace.mockRejectedValue(
+        new WorkspaceNotFoundError('missing-workspace'),
+      );
+
+      await expect(
+        resolver.getProjectsByWorkspace({
+          ...workspaceInput,
+          workspaceId: 'missing-workspace',
+        }),
+      ).rejects.toMatchObject({
+        message: 'Workspace "missing-workspace" does not exist',
+        extensions: {
+          code: 'NOT_FOUND',
+        },
+      });
+    });
+
+    it('should propagate unexpected errors', async () => {
+      const unexpectedError = new Error('Database unavailable');
+
+      getProjectsByWorkspace.mockRejectedValue(unexpectedError);
+
+      await expect(
+        resolver.getProjectsByWorkspace(workspaceInput),
       ).rejects.toBe(unexpectedError);
     });
   });

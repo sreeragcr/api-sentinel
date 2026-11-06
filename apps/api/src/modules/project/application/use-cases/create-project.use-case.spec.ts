@@ -1,5 +1,4 @@
 
-
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { CreateProjectUseCase } from './create-project.use-case.js';
@@ -9,9 +8,9 @@ import {
   InvalidProjectError,
 } from '../../domain/entities/project.entity.js';
 
-import { ProjectRepository } from '../ports/project.repository.js';
+import type { ProjectRepository } from '../ports/project.repository.js';
 
-import {
+import type {
   WorkspaceExistenceChecker,
 } from '../ports/workspace-existence-checker.js';
 
@@ -22,11 +21,18 @@ import {
 describe('CreateProjectUseCase', () => {
   const save = vi.fn<ProjectRepository['save']>();
 
+  const findById = vi.fn<ProjectRepository['findById']>();
+
+  const findByWorkspaceId =
+    vi.fn<ProjectRepository['findByWorkspaceId']>();
+
   const existsById =
     vi.fn<WorkspaceExistenceChecker['existsById']>();
 
   const projectRepository: ProjectRepository = {
     save,
+    findById,
+    findByWorkspaceId,
   };
 
   const workspaceExistenceChecker: WorkspaceExistenceChecker = {
@@ -37,11 +43,21 @@ describe('CreateProjectUseCase', () => {
 
   beforeEach(() => {
     save.mockReset();
+    findById.mockReset();
+    findByWorkspaceId.mockReset();
     existsById.mockReset();
 
+    // Default mock behavior
     existsById.mockResolvedValue(true);
 
     save.mockImplementation(async (project) => project);
+
+    findById.mockResolvedValue(null);
+
+    findByWorkspaceId.mockResolvedValue({
+      items: [],
+      totalCount: 0,
+    });
 
     useCase = new CreateProjectUseCase(
       projectRepository,

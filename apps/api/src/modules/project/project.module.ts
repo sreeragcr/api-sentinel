@@ -4,13 +4,13 @@ import { Module } from '@nestjs/common';
 import { PrismaModule } from '../../shared/infrastructure/database/prisma.module.js';
 
 import {
-  PROJECT_REPOSITORY,
-  type ProjectRepository,
+    PROJECT_REPOSITORY,
+    type ProjectRepository,
 } from './application/ports/project.repository.js';
 
 import {
-  WORKSPACE_EXISTENCE_CHECKER,
-  type WorkspaceExistenceChecker,
+    WORKSPACE_EXISTENCE_CHECKER,
+    type WorkspaceExistenceChecker,
 } from './application/ports/workspace-existence-checker.js';
 
 import { CreateProjectUseCase } from './application/use-cases/create-project.use-case.js';
@@ -21,34 +21,60 @@ import { PrismaWorkspaceExistenceChecker } from './infrastructure/persistence/pr
 
 import { ProjectResolver } from './presentation/graphql/project.resolver.js';
 
+import { GetProjectByIdUseCase } from './application/use-cases/get-project-by-id.use-case.js';
+
+import { GetProjectsByWorkspaceUseCase } from './application/use-cases/get-projects-by-workspace.use-case.js';
+
 @Module({
-  imports: [PrismaModule],
-  providers: [
-    ProjectResolver,
-    {
-      provide: PROJECT_REPOSITORY,
-      useClass: PrismaProjectRepository,
-    },
-    {
-      provide: WORKSPACE_EXISTENCE_CHECKER,
-      useClass: PrismaWorkspaceExistenceChecker,
-    },
-    {
-      provide: CreateProjectUseCase,
-      inject: [
-        PROJECT_REPOSITORY,
-        WORKSPACE_EXISTENCE_CHECKER,
-      ],
-      useFactory: (
-        projectRepository: ProjectRepository,
-        workspaceExistenceChecker: WorkspaceExistenceChecker,
-      ) =>
-        new CreateProjectUseCase(
-          projectRepository,
-          workspaceExistenceChecker,
-        ),
-    },
-  ],
-  exports: [CreateProjectUseCase],
+    imports: [PrismaModule],
+    providers: [
+        ProjectResolver,
+        {
+            provide: PROJECT_REPOSITORY,
+            useClass: PrismaProjectRepository,
+        },
+        {
+            provide: WORKSPACE_EXISTENCE_CHECKER,
+            useClass: PrismaWorkspaceExistenceChecker,
+        },
+        {
+            provide: CreateProjectUseCase,
+            inject: [
+                PROJECT_REPOSITORY,
+                WORKSPACE_EXISTENCE_CHECKER,
+            ],
+            useFactory: (
+                projectRepository: ProjectRepository,
+                workspaceExistenceChecker: WorkspaceExistenceChecker,
+            ) =>
+                new CreateProjectUseCase(
+                    projectRepository,
+                    workspaceExistenceChecker,
+                ),
+        },
+        {
+            provide: GetProjectByIdUseCase,
+            inject: [PROJECT_REPOSITORY],
+            useFactory: (repository: ProjectRepository) =>
+                new GetProjectByIdUseCase(repository),
+        },
+
+        {
+            provide: GetProjectsByWorkspaceUseCase,
+            inject: [
+                PROJECT_REPOSITORY,
+                WORKSPACE_EXISTENCE_CHECKER,
+            ],
+            useFactory: (
+                repository: ProjectRepository,
+                workspaceChecker: WorkspaceExistenceChecker,
+            ) =>
+                new GetProjectsByWorkspaceUseCase(
+                    repository,
+                    workspaceChecker,
+                ),
+        },
+    ],
+    exports: [CreateProjectUseCase],
 })
-export class ProjectModule {}
+export class ProjectModule { }

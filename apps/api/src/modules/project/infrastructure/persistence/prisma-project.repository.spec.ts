@@ -13,10 +13,16 @@ import { WorkspaceNotFoundError } from '../../application/errors/workspace-not-f
 
 describe('PrismaProjectRepository', () => {
   const create = vi.fn();
+  const findUnique = vi.fn();
+  const findMany = vi.fn();
+  const count = vi.fn();
 
   const prisma = {
     project: {
       create,
+      findUnique,
+      findMany,
+      count,
     },
   } as unknown as PrismaService;
 
@@ -33,6 +39,10 @@ describe('PrismaProjectRepository', () => {
 
   beforeEach(() => {
     create.mockReset();
+    findUnique.mockReset();
+    findMany.mockReset();
+    count.mockReset();
+
     repository = new PrismaProjectRepository(prisma);
   });
 
@@ -122,6 +132,132 @@ describe('PrismaProjectRepository', () => {
       await expect(
         repository.save(project),
       ).rejects.toBe(databaseError);
+    });
+  });
+
+  describe('findById()', () => {
+    it('should return a Project when the record exists', async () => {
+      const project = createProject();
+
+      findUnique.mockResolvedValue({
+        id: project.id,
+        workspaceId: project.workspaceId,
+        name: project.name,
+        slug: project.slug,
+        description: project.description,
+        createdAt: project.createdAt,
+        updatedAt: project.updatedAt,
+      });
+
+      const result = await repository.findById(project.id);
+
+      expect(findUnique).toHaveBeenCalledWith({
+        where: {
+          id: project.id,
+        },
+      });
+
+      expect(result).toBeInstanceOf(Project);
+      expect(result?.id).toBe(project.id);
+      expect(result?.workspaceId).toBe(project.workspaceId);
+      expect(result?.name).toBe(project.name);
+      expect(result?.slug).toBe(project.slug);
+    });
+
+    it('should return null when the Project does not exist', async () => {
+      findUnique.mockResolvedValue(null);
+
+      const result = await repository.findById('missing-project');
+
+      expect(result).toBeNull();
+
+      expect(findUnique).toHaveBeenCalledWith({
+        where: {
+          id: 'missing-project',
+        },
+      });
+    });
+  });
+
+  describe('findByWorkspaceId()', () => {
+    it('should return paginated Projects and total count', async () => {
+      const firstProject = createProject();
+
+      const secondProject = Project.create({
+        id: 'project-456',
+        workspaceId: 'workspace-123',
+        name: 'Frontend App',
+        slug: 'frontend-app',
+        description: null,
+      });
+
+      const toRecord = (project: Project) => ({
+        id: project.id,
+        workspaceId: project.workspaceId,
+        name: project.name,
+        slug: project.slug,
+        description: project.description,
+        createdAt: project.createdAt,
+        updatedAt: project.updatedAt,
+      });
+
+      findMany.mockResolvedValue([
+        toRecord(firstProject),
+        toRecord(secondProject),
+      ]);
+
+      count.mockResolvedValue(25);
+
+      const result = await repository.findByWorkspaceId(
+        'workspace-123',
+        {
+          offset: 0,
+          limit: 20,
+        },
+      );
+
+      expect(findMany).toHaveBeenCalledWith({
+        where: {
+          workspaceId: 'workspace-123',
+        },
+        skip: 0,
+        take: 20,
+        orderBy: [
+          { createdAt: 'desc' },
+          { id: 'desc' },
+        ],
+      });
+
+      expect(count).toHaveBeenCalledWith({
+        where: {
+          workspaceId: 'workspace-123',
+        },
+      });
+
+      expect(result.items).toHaveLength(2);
+      expect(result.totalCount).toBe(25);
+
+      expect(result.items[0]).toBeInstanceOf(Project);
+      expect(result.items[1]).toBeInstanceOf(Project);
+
+      expect(result.items[0].name).toBe('Backend API');
+      expect(result.items[1].name).toBe('Frontend App');
+    });
+
+    it('should return an empty list when Workspace has no Projects', async () => {
+      findMany.mockResolvedValue([]);
+      count.mockResolvedValue(0);
+
+      const result = await repository.findByWorkspaceId(
+        'workspace-123',
+        {
+          offset: 0,
+          limit: 20,
+        },
+      );
+
+      expect(result.items).toEqual([]);
+      expect(result.totalCount).toBe(0);
     });
   });
 });
