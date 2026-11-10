@@ -44,6 +44,20 @@ describe('Project GraphQL (e2e)', () => {
     }
   `;
 
+  const UPDATE_PROJECT_MUTATION = `
+    mutation UpdateProject($input: UpdateProjectInput!) {
+      updateProject(input: $input) {
+        id
+        workspaceId
+        name
+        slug
+        description
+        createdAt
+        updatedAt
+      }
+    }
+  `;
+
   const GET_PROJECT_QUERY = `
     query GetProject($id: ID!) {
       project(id: $id) {
@@ -91,6 +105,25 @@ describe('Project GraphQL (e2e)', () => {
           input: {
             workspaceId,
             name,
+          },
+        },
+      });
+
+  const updateProjectRequest = (
+    projectId: string,
+    fields: {
+      name?: string;
+      description?: string | null;
+    } = {},
+  ) =>
+    request(app.getHttpServer())
+      .post('/graphql')
+      .send({
+        query: UPDATE_PROJECT_MUTATION,
+        variables: {
+          input: {
+            projectId,
+            ...fields,
           },
         },
       });
@@ -438,6 +471,184 @@ describe('Project GraphQL (e2e)', () => {
       expect(
         response.body.errors[0].extensions.code,
       ).toBe('NOT_FOUND');
+    });
+  });
+
+  // --------------------------------------------------
+  // UPDATE PROJECT MUTATION
+  // --------------------------------------------------
+
+  describe('updateProject mutation', () => {
+    it('should update project name and regenerate slug', async () => {
+      const suffix = randomUUID();
+
+      const project = await prisma.project.create({
+        data: {
+          workspaceId: firstWorkspaceId,
+          name: `Original Project ${suffix}`,
+          slug: `original-project-${suffix}`,
+          description: 'Original description',
+        },
+      });
+
+      const response = await updateProjectRequest(project.id, {
+        name: 'Updated API Project',
+      }).expect(200);
+
+      expect(response.body.errors).toBeUndefined();
+
+      const result = response.body.data.updateProject;
+
+      expect(result.id).toBe(project.id);
+      expect(result.name).toBe('Updated API Project');
+      expect(result.slug).toBe('updated-api-project');
+      expect(result.description).toBe('Original description');
+      expect(result.workspaceId).toBe(firstWorkspaceId);
+      expect(result.createdAt).toBe(project.createdAt.toISOString());
+      expect(new Date(result.updatedAt).getTime()).toBeGreaterThan(
+        project.updatedAt.getTime(),
+      );
+
+      const persistedProject = await prisma.project.findUnique({
+        where: {
+          id: project.id,
+        },
+      });
+
+      expect(persistedProject?.name).toBe('Updated API Project');
+      expect(persistedProject?.slug).toBe('updated-api-project');
+    });
+
+    it('should update description without changing project name or slug', async () => {
+      const suffix = randomUUID();
+
+      const project = await prisma.project.create({
+        data: {
+          workspaceId: firstWorkspaceId,
+          name: `Description Project ${suffix}`,
+          slug: `description-project-${suffix}`,
+          description: 'Old description',
+        },
+      });
+
+      const response = await updateProjectRequest(project.id, {
+        description: 'Updated description',
+      }).expect(200);
+
+      expect(response.body.errors).toBeUndefined();
+
+      const result = response.body.data.updateProject;
+
+      expect(result.name).toBe(project.name);
+      expect(result.slug).toBe(project.slug);
+      expect(result.description).toBe('Updated description');
+
+      const persistedProject = await prisma.project.findUnique({
+        where: {
+          id: project.id,
+        },
+      });
+
+      expect(persistedProject?.description).toBe('Updated description');
+    });
+
+    it('should clear project description when null is provided', async () => {
+      const suffix = randomUUID();
+
+      const project = await prisma.project.create({
+        data: {
+          workspaceId: firstWorkspaceId,
+          name: `Clear Description Project ${suffix}`,
+          slug: `clear-desc-${suffix}`,
+          description: 'Description to clear',
+        },
+      });
+
+      const response = await updateProjectRequest(project.id, {
+        description: null,
+      }).expect(200);
+
+      expect(response.body.errors).toBeUndefined();
+
+      const result = response.body.data.updateProject;
+
+      expect(result.description).toBeNull();
+
+      const persistedProject = await prisma.project.findUnique({
+        where: {
+          id: project.id,
+        },
+      });
+
+      expect(persistedProject?.description).toBeNull();
+    });
+
+    it('should reject duplicate project slug in the same workspace', async () => {
+      const suffix = randomUUID();
+
+      const existingProject = await prisma.project.create({
+        data: {
+          workspaceId: firstWorkspaceId,
+          name: `Existing Project ${suffix}`,
+          slug: `existing-project-${suffix}`,
+        },
+      });
+
+      const projectToUpdate = await prisma.project.create({
+        data: {
+          workspaceId: firstWorkspaceId,
+          name: `Project To Update ${suffix}`,
+          slug: `project-to-update-${suffix}`,
+        },
+      });
+
+      const response = await updateProjectRequest(projectToUpdate.id, {
+        name: existingProject.name,
+      }).expect(200);
+
+      expect(response.body.errors).toBeDefined();
+      expect(
+        response.body.errors[0].extensions.code,
+      ).toBe('CONFLICT');
+
+      const persistedProject = await prisma.project.findUnique({
+        where: {
+          id: projectToUpdate.id,
+        },
+      });
+
+      expect(persistedProject?.name).toBe(projectToUpdate.name);
+      expect(persistedProject?.slug).toBe(projectToUpdate.slug);
+    });
+
+    it('should return NOT_FOUND for a non-existent project', async () => {
+      const response = await updateProjectRequest(randomUUID(), {
+        name: 'Non Existing Project',
+      }).expect(200);
+
+      expect(response.body.errors).toBeDefined();
+      expect(
+        response.body.errors[0].extensions.code,
+      ).toBe('NOT_FOUND');
+    });
+
+    it('should reject update without any editable fields', async () => {
+      const suffix = randomUUID();
+
+      const project = await prisma.project.create({
+        data: {
+          workspaceId: firstWorkspaceId,
+          name: `Empty Update Project ${suffix}`,
+          slug: `empty-update-project-${suffix}`,
+        },
+      });
+
+      const response = await updateProjectRequest(project.id).expect(200);
+
+      expect(response.body.errors).toBeDefined();
+      expect(
+        response.body.errors[0].extensions.code,
+      ).toBe('BAD_REQUEST');
     });
   });
 });

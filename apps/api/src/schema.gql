@@ -34,6 +34,9 @@ type HealthModel {
 type Mutation {
   createProject(input: CreateProjectInput!): ProjectModel!
   createWorkspace(input: CreateWorkspaceInput!): WorkspaceModel!
+  deleteProject(projectId: ID!): ProjectModel!
+  restoreProject(projectId: ID!): ProjectModel!
+  updateProject(input: UpdateProjectInput!): ProjectModel!
 }
 
 type ProjectListModel {
@@ -55,6 +58,12 @@ type Query {
   health: HealthModel!
   project(id: ID!): ProjectModel!
   projectsByWorkspace(input: GetProjectsByWorkspaceInput!): ProjectListModel!
+}
+
+input UpdateProjectInput {
+  description: String
+  name: String
+  projectId: ID!
 }
 
 type WorkspaceModel {

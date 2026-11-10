@@ -14,21 +14,22 @@ import {
 } from './application/ports/workspace-existence-checker.js';
 
 import { CreateProjectUseCase } from './application/use-cases/create-project.use-case.js';
+import { UpdateProjectUseCase } from './application/use-cases/update-project.use-case.js';
+import { DeleteProjectUseCase } from './application/use-cases/delete-project.use-case.js';
+import { RestoreProjectUseCase } from './application/use-cases/restore-project.use-case.js';
+import { GetProjectByIdUseCase } from './application/use-cases/get-project-by-id.use-case.js';
+import { GetProjectsByWorkspaceUseCase } from './application/use-cases/get-projects-by-workspace.use-case.js';
 
 import { PrismaProjectRepository } from './infrastructure/persistence/prisma-project.repository.js';
-
 import { PrismaWorkspaceExistenceChecker } from './infrastructure/persistence/prisma-workspace-existence-checker.js';
 
 import { ProjectResolver } from './presentation/graphql/project.resolver.js';
-
-import { GetProjectByIdUseCase } from './application/use-cases/get-project-by-id.use-case.js';
-
-import { GetProjectsByWorkspaceUseCase } from './application/use-cases/get-projects-by-workspace.use-case.js';
 
 @Module({
     imports: [PrismaModule],
     providers: [
         ProjectResolver,
+
         {
             provide: PROJECT_REPOSITORY,
             useClass: PrismaProjectRepository,
@@ -37,6 +38,7 @@ import { GetProjectsByWorkspaceUseCase } from './application/use-cases/get-proje
             provide: WORKSPACE_EXISTENCE_CHECKER,
             useClass: PrismaWorkspaceExistenceChecker,
         },
+
         {
             provide: CreateProjectUseCase,
             inject: [
@@ -53,12 +55,29 @@ import { GetProjectsByWorkspaceUseCase } from './application/use-cases/get-proje
                 ),
         },
         {
+            provide: UpdateProjectUseCase,
+            inject: [PROJECT_REPOSITORY],
+            useFactory: (repository: ProjectRepository) =>
+                new UpdateProjectUseCase(repository),
+        },
+        {
+            provide: DeleteProjectUseCase,
+            inject: [PROJECT_REPOSITORY],
+            useFactory: (repository: ProjectRepository) =>
+                new DeleteProjectUseCase(repository),
+        },
+        {
+            provide: RestoreProjectUseCase,
+            inject: [PROJECT_REPOSITORY],
+            useFactory: (repository: ProjectRepository) =>
+                new RestoreProjectUseCase(repository),
+        },
+        {
             provide: GetProjectByIdUseCase,
             inject: [PROJECT_REPOSITORY],
             useFactory: (repository: ProjectRepository) =>
                 new GetProjectByIdUseCase(repository),
         },
-
         {
             provide: GetProjectsByWorkspaceUseCase,
             inject: [
@@ -77,4 +96,4 @@ import { GetProjectsByWorkspaceUseCase } from './application/use-cases/get-proje
     ],
     exports: [CreateProjectUseCase],
 })
-export class ProjectModule { }
+export class ProjectModule {}

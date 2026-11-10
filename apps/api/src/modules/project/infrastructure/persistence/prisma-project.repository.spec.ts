@@ -13,6 +13,7 @@ import { WorkspaceNotFoundError } from '../../application/errors/workspace-not-f
 
 describe('PrismaProjectRepository', () => {
   const create = vi.fn();
+  const update = vi.fn();
   const findUnique = vi.fn();
   const findMany = vi.fn();
   const count = vi.fn();
@@ -20,6 +21,7 @@ describe('PrismaProjectRepository', () => {
   const prisma = {
     project: {
       create,
+      update,
       findUnique,
       findMany,
       count,
@@ -39,6 +41,7 @@ describe('PrismaProjectRepository', () => {
 
   beforeEach(() => {
     create.mockReset();
+    update.mockReset();
     findUnique.mockReset();
     findMany.mockReset();
     count.mockReset();
@@ -69,6 +72,7 @@ describe('PrismaProjectRepository', () => {
           name: project.name,
           slug: project.slug,
           description: project.description,
+          deletedAt: null,
           createdAt: project.createdAt,
           updatedAt: project.updatedAt,
         },
@@ -219,6 +223,7 @@ describe('PrismaProjectRepository', () => {
       expect(findMany).toHaveBeenCalledWith({
         where: {
           workspaceId: 'workspace-123',
+          deletedAt: null,
         },
         skip: 0,
         take: 20,
@@ -231,6 +236,7 @@ describe('PrismaProjectRepository', () => {
       expect(count).toHaveBeenCalledWith({
         where: {
           workspaceId: 'workspace-123',
+          deletedAt: null,
         },
       });
 

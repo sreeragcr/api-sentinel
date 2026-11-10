@@ -11,14 +11,21 @@ import { ProjectNotFoundError } from '../errors/project-not-found.error.js';
 
 describe('GetProjectByIdUseCase', () => {
   const save = vi.fn<ProjectRepository['save']>();
+  const update = vi.fn<ProjectRepository['update']>();
   const findById = vi.fn<ProjectRepository['findById']>();
   const findByWorkspaceId =
     vi.fn<ProjectRepository['findByWorkspaceId']>();
+  const findDeletedByWorkspaceId =
+    vi.fn<ProjectRepository['findDeletedByWorkspaceId']>();
+  const deleteById = vi.fn<ProjectRepository['deleteById']>();
 
   const repository: ProjectRepository = {
     save,
+    update,
     findById,
     findByWorkspaceId,
+    findDeletedByWorkspaceId,
+    deleteById,
   };
 
   let useCase: GetProjectByIdUseCase;
@@ -34,6 +41,7 @@ describe('GetProjectByIdUseCase', () => {
 
   beforeEach(() => {
     save.mockReset();
+    update.mockReset();
     findById.mockReset();
     findByWorkspaceId.mockReset();
 

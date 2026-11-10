@@ -1,8 +1,6 @@
-
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { BadRequestException } from '@nestjs/common';
-import { GraphQLError } from 'graphql';
 
 import { ProjectResolver } from './project.resolver.js';
 
@@ -17,6 +15,14 @@ import type {
 import type {
   GetProjectsByWorkspaceUseCase,
 } from '../../application/use-cases/get-projects-by-workspace.use-case.js';
+
+import type {
+  UpdateProjectUseCase,
+} from '../../application/use-cases/update-project.use-case.js';
+
+import {
+  DeleteProjectUseCase
+} from '../../application/use-cases/delete-project.use-case.js';
 
 import {
   Project,
@@ -34,6 +40,7 @@ import {
 import {
   WorkspaceNotFoundError,
 } from '../../application/errors/workspace-not-found.error.js';
+import { RestoreProjectUseCase } from '../../application/use-cases/restore-project.use-case.js';
 
 describe('ProjectResolver', () => {
   // Create Project use case mock
@@ -46,6 +53,10 @@ describe('ProjectResolver', () => {
   // Get Projects by Workspace use case mock
   const getProjectsByWorkspace =
     vi.fn<GetProjectsByWorkspaceUseCase['execute']>();
+
+  // Update Project use case mock
+  const updateProject =
+    vi.fn<UpdateProjectUseCase['execute']>();
 
   // Mock use case dependencies
   const useCase = {
@@ -60,6 +71,14 @@ describe('ProjectResolver', () => {
     execute: getProjectsByWorkspace,
   } as unknown as GetProjectsByWorkspaceUseCase;
 
+  const updateProjectUseCase = {
+    execute: updateProject,
+  } as unknown as UpdateProjectUseCase;
+
+  const deleteProjectUseCase = {
+    execute: vi.fn(),
+  } as unknown as DeleteProjectUseCase;
+
   let resolver: ProjectResolver;
 
   const input = {
@@ -67,6 +86,15 @@ describe('ProjectResolver', () => {
     name: 'Backend API',
     description: 'Backend API testing project',
   };
+
+  const updateInput = {
+    projectId: 'project-123',
+    name: 'Updated Backend API',
+  };
+
+  const restoreProjectUseCase = {
+    execute: vi.fn(),
+  } as unknown as RestoreProjectUseCase;
 
   const createProject = (
     id = 'project-123',
@@ -85,11 +113,15 @@ describe('ProjectResolver', () => {
     execute.mockReset();
     getProjectById.mockReset();
     getProjectsByWorkspace.mockReset();
+    updateProject.mockReset();
 
     resolver = new ProjectResolver(
       useCase,
       getProjectByIdUseCase,
       getProjectsByWorkspaceUseCase,
+      updateProjectUseCase,
+      deleteProjectUseCase,
+      restoreProjectUseCase,
     );
   });
 
@@ -291,6 +323,84 @@ describe('ProjectResolver', () => {
 
       await expect(
         resolver.getProjectsByWorkspace(workspaceInput),
+      ).rejects.toBe(unexpectedError);
+    });
+  });
+
+  // --------------------------------------------------
+  // UPDATE PROJECT MUTATION
+  // --------------------------------------------------
+
+  describe('updateProject()', () => {
+    it('should update a project successfully', async () => {
+      const project = createProject(
+        'project-123',
+        'Updated Backend API',
+        'updated-backend-api',
+      );
+
+      updateProject.mockResolvedValue(project);
+
+      const result = await resolver.updateProject(updateInput);
+
+      expect(updateProject).toHaveBeenCalledWith(updateInput);
+      expect(result).toBe(project);
+    });
+
+    it('should translate duplicate slug error into GraphQL CONFLICT', async () => {
+      updateProject.mockRejectedValue(
+        new ProjectSlugAlreadyExistsError(
+          'workspace-123',
+          'updated-backend-api',
+        ),
+      );
+
+      await expect(
+        resolver.updateProject(updateInput),
+      ).rejects.toMatchObject({
+        message:
+          'A project with slug "updated-backend-api" already exists in workspace "workspace-123"',
+        extensions: {
+          code: 'CONFLICT',
+        },
+      });
+    });
+
+    it('should translate project not found error into GraphQL NOT_FOUND', async () => {
+      updateProject.mockRejectedValue(
+        new ProjectNotFoundError('missing-project'),
+      );
+
+      await expect(
+        resolver.updateProject({
+          ...updateInput,
+          projectId: 'missing-project',
+        }),
+      ).rejects.toMatchObject({
+        message: 'Project "missing-project" does not exist',
+        extensions: {
+          code: 'NOT_FOUND',
+        },
+      });
+    });
+
+    it('should translate invalid project error into BadRequestException', async () => {
+      updateProject.mockRejectedValue(
+        new InvalidProjectError('Invalid project name'),
+      );
+
+      await expect(
+        resolver.updateProject(updateInput),
+      ).rejects.toBeInstanceOf(BadRequestException);
+    });
+
+    it('should propagate unexpected errors', async () => {
+      const unexpectedError = new Error('Database unavailable');
+
+      updateProject.mockRejectedValue(unexpectedError);
+
+      await expect(
+        resolver.updateProject(updateInput),
       ).rejects.toBe(unexpectedError);
     });
   });

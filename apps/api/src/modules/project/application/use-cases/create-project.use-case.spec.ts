@@ -26,13 +26,23 @@ describe('CreateProjectUseCase', () => {
   const findByWorkspaceId =
     vi.fn<ProjectRepository['findByWorkspaceId']>();
 
+  const findDeletedByWorkspaceId =
+    vi.fn<ProjectRepository['findDeletedByWorkspaceId']>();
+
+  const deleteById = vi.fn<ProjectRepository['deleteById']>();
+
   const existsById =
     vi.fn<WorkspaceExistenceChecker['existsById']>();
 
+  const update = vi.fn<ProjectRepository['update']>();
+
   const projectRepository: ProjectRepository = {
     save,
+    update,
     findById,
     findByWorkspaceId,
+    findDeletedByWorkspaceId,
+    deleteById,
   };
 
   const workspaceExistenceChecker: WorkspaceExistenceChecker = {
@@ -43,6 +53,7 @@ describe('CreateProjectUseCase', () => {
 
   beforeEach(() => {
     save.mockReset();
+    update.mockReset();
     findById.mockReset();
     findByWorkspaceId.mockReset();
     existsById.mockReset();
@@ -51,6 +62,8 @@ describe('CreateProjectUseCase', () => {
     existsById.mockResolvedValue(true);
 
     save.mockImplementation(async (project) => project);
+
+    update.mockImplementation(async (project) => project);
 
     findById.mockResolvedValue(null);
 

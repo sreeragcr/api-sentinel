@@ -18,10 +18,22 @@ export interface ProjectListResult {
 export interface ProjectRepository {
   save(project: Project): Promise<Project>;
 
+  update(project: Project): Promise<Project>;
+
   findById(id: string): Promise<Project | null>;
 
+  // Retrieves active projects belonging to a workspace.
   findByWorkspaceId(
     workspaceId: string,
     options: ProjectListOptions,
   ): Promise<ProjectListResult>;
+
+  // Retrieves deleted projects belonging to a workspace.
+  findDeletedByWorkspaceId(
+    workspaceId: string,
+    options: ProjectListOptions,
+  ): Promise<ProjectListResult>;
+
+  // Permanently removes a project.
+  deleteById(id: string): Promise<void>;
 }
