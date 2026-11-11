@@ -1,3 +1,4 @@
+
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { BadRequestException } from '@nestjs/common';
@@ -21,8 +22,20 @@ import type {
 } from '../../application/use-cases/update-project.use-case.js';
 
 import {
-  DeleteProjectUseCase
+  DeleteProjectUseCase,
 } from '../../application/use-cases/delete-project.use-case.js';
+
+import type {
+  PermanentlyDeleteProjectUseCase,
+} from '../../application/use-cases/permanently-delete-project.use-case.js';
+
+import {
+  RestoreProjectUseCase,
+} from '../../application/use-cases/restore-project.use-case.js';
+
+import {
+  GetDeletedProjectsByWorkspaceUseCase,
+} from '../../application/use-cases/get-deleted-projects-by-workspace.use-case.js';
 
 import {
   Project,
@@ -38,9 +51,12 @@ import {
 } from '../../application/errors/project-not-found.error.js';
 
 import {
+  ProjectNotInTrashError,
+} from '../../application/errors/project-not-in-trash.error.js';
+
+import {
   WorkspaceNotFoundError,
 } from '../../application/errors/workspace-not-found.error.js';
-import { RestoreProjectUseCase } from '../../application/use-cases/restore-project.use-case.js';
 
 describe('ProjectResolver', () => {
   // Create Project use case mock
@@ -57,6 +73,10 @@ describe('ProjectResolver', () => {
   // Update Project use case mock
   const updateProject =
     vi.fn<UpdateProjectUseCase['execute']>();
+
+  // Permanent Delete Project use case mock
+  const permanentlyDeleteProject =
+    vi.fn<PermanentlyDeleteProjectUseCase['execute']>();
 
   // Mock use case dependencies
   const useCase = {
@@ -79,6 +99,18 @@ describe('ProjectResolver', () => {
     execute: vi.fn(),
   } as unknown as DeleteProjectUseCase;
 
+  const permanentlyDeleteProjectUseCase = {
+    execute: permanentlyDeleteProject,
+  } as unknown as PermanentlyDeleteProjectUseCase;
+
+  const restoreProjectUseCase = {
+    execute: vi.fn(),
+  } as unknown as RestoreProjectUseCase;
+
+  const getDeletedProjectsByWorkspaceUseCase = {
+    execute: vi.fn(),
+  } as unknown as GetDeletedProjectsByWorkspaceUseCase;
+
   let resolver: ProjectResolver;
 
   const input = {
@@ -91,10 +123,6 @@ describe('ProjectResolver', () => {
     projectId: 'project-123',
     name: 'Updated Backend API',
   };
-
-  const restoreProjectUseCase = {
-    execute: vi.fn(),
-  } as unknown as RestoreProjectUseCase;
 
   const createProject = (
     id = 'project-123',
@@ -114,6 +142,7 @@ describe('ProjectResolver', () => {
     getProjectById.mockReset();
     getProjectsByWorkspace.mockReset();
     updateProject.mockReset();
+    permanentlyDeleteProject.mockReset();
 
     resolver = new ProjectResolver(
       useCase,
@@ -122,6 +151,8 @@ describe('ProjectResolver', () => {
       updateProjectUseCase,
       deleteProjectUseCase,
       restoreProjectUseCase,
+      getDeletedProjectsByWorkspaceUseCase,
+      permanentlyDeleteProjectUseCase,
     );
   });
 
@@ -401,6 +432,66 @@ describe('ProjectResolver', () => {
 
       await expect(
         resolver.updateProject(updateInput),
+      ).rejects.toBe(unexpectedError);
+    });
+  });
+
+  // --------------------------------------------------
+  // PERMANENTLY DELETE PROJECT MUTATION
+  // --------------------------------------------------
+
+  describe('permanentlyDeleteProject()', () => {
+    it('should permanently delete a project and return true', async () => {
+      permanentlyDeleteProject.mockResolvedValue(undefined);
+
+      const result = await resolver.permanentlyDeleteProject(
+        'project-123',
+      );
+
+      expect(permanentlyDeleteProject).toHaveBeenCalledOnce();
+      expect(permanentlyDeleteProject).toHaveBeenCalledWith({
+        projectId: 'project-123',
+      });
+      expect(result).toBe(true);
+    });
+
+    it('should translate project not found error into GraphQL NOT_FOUND', async () => {
+      permanentlyDeleteProject.mockRejectedValue(
+        new ProjectNotFoundError('missing-project'),
+      );
+
+      await expect(
+        resolver.permanentlyDeleteProject('missing-project'),
+      ).rejects.toMatchObject({
+        message: 'Project "missing-project" does not exist',
+        extensions: {
+          code: 'NOT_FOUND',
+        },
+      });
+    });
+
+    it('should translate project not in trash error into GraphQL BAD_REQUEST', async () => {
+      permanentlyDeleteProject.mockRejectedValue(
+        new ProjectNotInTrashError('project-123'),
+      );
+
+      await expect(
+        resolver.permanentlyDeleteProject('project-123'),
+      ).rejects.toMatchObject({
+        message: 'Project with ID project-123 is not in trash',
+        extensions: {
+          code: 'BAD_REQUEST',
+        },
+      });
+    });
+
+    it('should propagate unexpected errors', async () => {
+      const unexpectedError = new Error('Database unavailable');
+
+      permanentlyDeleteProject.mockRejectedValue(unexpectedError);
+
+      await expect(
+        resolver.permanentlyDeleteProject('project-123'),
       ).rejects.toBe(unexpectedError);
     });
   });

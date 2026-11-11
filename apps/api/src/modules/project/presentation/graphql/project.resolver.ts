@@ -14,13 +14,17 @@ import { GraphQLError } from 'graphql';
 import { CreateProjectUseCase } from '../../application/use-cases/create-project.use-case.js';
 import { GetProjectByIdUseCase } from '../../application/use-cases/get-project-by-id.use-case.js';
 import { GetProjectsByWorkspaceUseCase } from '../../application/use-cases/get-projects-by-workspace.use-case.js';
+import { GetDeletedProjectsByWorkspaceUseCase } from '../../application/use-cases/get-deleted-projects-by-workspace.use-case.js';
 import { UpdateProjectUseCase } from '../../application/use-cases/update-project.use-case.js';
 import { DeleteProjectUseCase } from '../../application/use-cases/delete-project.use-case.js';
 import { RestoreProjectUseCase } from '../../application/use-cases/restore-project.use-case.js';
+import { PermanentlyDeleteProjectUseCase } from '../../application/use-cases/permanently-delete-project.use-case.js';
+
 
 import { ProjectSlugAlreadyExistsError } from '../../application/errors/project-slug-already-exists.error.js';
 import { ProjectNotFoundError } from '../../application/errors/project-not-found.error.js';
 import { WorkspaceNotFoundError } from '../../application/errors/workspace-not-found.error.js';
+import { ProjectNotInTrashError } from '../../application/errors/project-not-in-trash.error.js';
 
 import { InvalidProjectError } from '../../domain/entities/project.entity.js';
 
@@ -40,7 +44,9 @@ export class ProjectResolver {
     private readonly updateProjectUseCase: UpdateProjectUseCase,
     private readonly deleteProjectUseCase: DeleteProjectUseCase,
     private readonly restoreProjectUseCase: RestoreProjectUseCase,
-  ) {}
+    private readonly getDeletedProjectsByWorkspaceUseCase: GetDeletedProjectsByWorkspaceUseCase,
+    private readonly permanentlyDeleteProjectUseCase: PermanentlyDeleteProjectUseCase,
+  ) { }
 
   @Mutation(() => ProjectModel)
   async createProject(
@@ -113,6 +119,31 @@ export class ProjectResolver {
     }
   }
 
+  @Mutation(() => Boolean)
+  async permanentlyDeleteProject(
+    @Args('projectId', { type: () => ID }) projectId: string,
+  ): Promise<boolean> {
+    try {
+      await this.permanentlyDeleteProjectUseCase.execute({ projectId });
+
+      return true;
+    } catch (error: unknown) {
+      if (error instanceof ProjectNotFoundError) {
+        throw new GraphQLError(error.message, {
+          extensions: { code: 'NOT_FOUND' },
+        });
+      }
+
+      if (error instanceof ProjectNotInTrashError) {
+        throw new GraphQLError(error.message, {
+          extensions: { code: 'BAD_REQUEST' },
+        });
+      }
+
+      throw error;
+    }
+  }
+
   @Mutation(() => ProjectModel)
   async restoreProject(
     @Args('projectId', { type: () => ID }) projectId: string,
@@ -153,6 +184,25 @@ export class ProjectResolver {
   ): Promise<ProjectListModel> {
     try {
       return await this.getProjectsByWorkspaceUseCase.execute(input);
+    } catch (error: unknown) {
+      if (error instanceof WorkspaceNotFoundError) {
+        throw new GraphQLError(error.message, {
+          extensions: { code: 'NOT_FOUND' },
+        });
+      }
+
+      throw error;
+    }
+  }
+
+  @Query(() => ProjectListModel, {
+    name: 'deletedProjectsByWorkspace',
+  })
+  async getDeletedProjectsByWorkspace(
+    @Args('input') input: GetProjectsByWorkspaceInput,
+  ): Promise<ProjectListModel> {
+    try {
+      return await this.getDeletedProjectsByWorkspaceUseCase.execute(input);
     } catch (error: unknown) {
       if (error instanceof WorkspaceNotFoundError) {
         throw new GraphQLError(error.message, {

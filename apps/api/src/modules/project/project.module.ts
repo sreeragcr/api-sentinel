@@ -19,6 +19,8 @@ import { DeleteProjectUseCase } from './application/use-cases/delete-project.use
 import { RestoreProjectUseCase } from './application/use-cases/restore-project.use-case.js';
 import { GetProjectByIdUseCase } from './application/use-cases/get-project-by-id.use-case.js';
 import { GetProjectsByWorkspaceUseCase } from './application/use-cases/get-projects-by-workspace.use-case.js';
+import { GetDeletedProjectsByWorkspaceUseCase } from './application/use-cases/get-deleted-projects-by-workspace.use-case.js';
+import { PermanentlyDeleteProjectUseCase } from './application/use-cases/permanently-delete-project.use-case.js';
 
 import { PrismaProjectRepository } from './infrastructure/persistence/prisma-project.repository.js';
 import { PrismaWorkspaceExistenceChecker } from './infrastructure/persistence/prisma-workspace-existence-checker.js';
@@ -67,6 +69,12 @@ import { ProjectResolver } from './presentation/graphql/project.resolver.js';
                 new DeleteProjectUseCase(repository),
         },
         {
+            provide: PermanentlyDeleteProjectUseCase,
+            inject: [PROJECT_REPOSITORY],
+            useFactory: (repository: ProjectRepository) =>
+                new PermanentlyDeleteProjectUseCase(repository),
+        },
+        {
             provide: RestoreProjectUseCase,
             inject: [PROJECT_REPOSITORY],
             useFactory: (repository: ProjectRepository) =>
@@ -93,7 +101,22 @@ import { ProjectResolver } from './presentation/graphql/project.resolver.js';
                     workspaceChecker,
                 ),
         },
+        {
+            provide: GetDeletedProjectsByWorkspaceUseCase,
+            inject: [
+                PROJECT_REPOSITORY,
+                WORKSPACE_EXISTENCE_CHECKER,
+            ],
+            useFactory: (
+                repository: ProjectRepository,
+                workspaceChecker: WorkspaceExistenceChecker,
+            ) =>
+                new GetDeletedProjectsByWorkspaceUseCase(
+                    repository,
+                    workspaceChecker,
+                ),
+        },
     ],
     exports: [CreateProjectUseCase],
 })
-export class ProjectModule {}
+export class ProjectModule { }

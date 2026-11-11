@@ -35,6 +35,7 @@ type Mutation {
   createProject(input: CreateProjectInput!): ProjectModel!
   createWorkspace(input: CreateWorkspaceInput!): WorkspaceModel!
   deleteProject(projectId: ID!): ProjectModel!
+  permanentlyDeleteProject(projectId: ID!): Boolean!
   restoreProject(projectId: ID!): ProjectModel!
   updateProject(input: UpdateProjectInput!): ProjectModel!
 }
@@ -55,6 +56,7 @@ type ProjectModel {
 }
 
 type Query {
+  deletedProjectsByWorkspace(input: GetProjectsByWorkspaceInput!): ProjectListModel!
   health: HealthModel!
   project(id: ID!): ProjectModel!
   projectsByWorkspace(input: GetProjectsByWorkspaceInput!): ProjectListModel!
