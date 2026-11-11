@@ -7,6 +7,14 @@ datasource db {
   provider = "postgresql"
 }
 
+enum ApiProtocol {
+  REST
+  GRAPHQL
+  GRPC
+
+  @@map("api_protocol")
+}
+
 model Workspace {
   id          String  @id @default(uuid()) @db.Uuid
   name        String  @db.VarChar(120)
@@ -35,7 +43,26 @@ model Project {
 
   workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Restrict)
 
+  apiDefinitions ApiDefinition[]
+
   @@unique([workspaceId, slug])
   @@index([workspaceId])
   @@map("projects")
+}
+
+model ApiDefinition {
+  id        String      @id @default(uuid()) @db.Uuid
+  projectId String      @map("project_id") @db.Uuid
+  name      String      @db.VarChar(120)
+  description String?   @db.VarChar(500)
+  protocol  ApiProtocol
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  project Project @relation(fields: [projectId], references: [id], onDelete: Restrict)
+
+  @@unique([projectId, name])
+  @@index([projectId])
+  @@map("api_definitions")
 }
