@@ -9,6 +9,11 @@ import {
 } from './application/ports/api-definition.repository.js';
 
 import {
+  REST_ENDPOINT_REPOSITORY,
+  type RestEndpointRepository,
+} from './application/ports/rest-endpoint.repository.js';
+
+import {
   PROJECT_EXISTENCE_CHECKER,
   type ProjectExistenceChecker,
 } from './application/ports/project-existence-checker.js';
@@ -19,21 +24,33 @@ import { GetApiDefinitionByIdUseCase } from './application/use-cases/get-api-def
 
 import { GetApiDefinitionsByProjectUseCase } from './application/use-cases/get-api-definitions-by-project.use-case.js';
 
+import { CreateRestEndpointUseCase } from './application/use-cases/create-rest-endpoint.use-case.js';
+
 import { PrismaApiDefinitionRepository } from './infrastructure/persistence/prisma-api-definition.repository.js';
+
+import { PrismaRestEndpointRepository } from './infrastructure/persistence/prisma-rest-endpoint.repository.js';
 
 import { PrismaProjectExistenceChecker } from './infrastructure/persistence/prisma-project-existence-checker.js';
 
 import { ApiDefinitionResolver } from './presentation/graphql/api-definition.resolver.js';
+
+import { RestEndpointResolver } from './presentation/graphql/rest-endpoint.resolver.js';
 
 @Module({
   imports: [PrismaModule],
 
   providers: [
     ApiDefinitionResolver,
+     RestEndpointResolver,
 
     {
       provide: API_DEFINITION_REPOSITORY,
       useClass: PrismaApiDefinitionRepository,
+    },
+
+    {
+      provide: REST_ENDPOINT_REPOSITORY,
+      useClass: PrismaRestEndpointRepository,
     },
 
     {
@@ -83,12 +100,29 @@ import { ApiDefinitionResolver } from './presentation/graphql/api-definition.res
           projectExistenceChecker,
         ),
     },
+
+    {
+      provide: CreateRestEndpointUseCase,
+      inject: [
+        REST_ENDPOINT_REPOSITORY,
+        API_DEFINITION_REPOSITORY,
+      ],
+      useFactory: (
+        restEndpointRepository: RestEndpointRepository,
+        apiDefinitionRepository: ApiDefinitionRepository,
+      ) =>
+        new CreateRestEndpointUseCase(
+          restEndpointRepository,
+          apiDefinitionRepository,
+        ),
+    },
   ],
 
   exports: [
     CreateApiDefinitionUseCase,
     GetApiDefinitionByIdUseCase,
     GetApiDefinitionsByProjectUseCase,
+    CreateRestEndpointUseCase,
   ],
 })
 export class ApiRegistryModule {}

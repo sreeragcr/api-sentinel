@@ -5,7 +5,7 @@ import { GetApiDefinitionByIdUseCase } from './get-api-definition-by-id.use-case
 
 import { ApiDefinition } from '../../domain/entities/api-definition.entity.js';
 
-import { ApiProtocol } from '../../domain/api-protocol.enum.js';
+import { ApiProtocol } from '../../domain/enums/api-protocol.enum.js';
 
 import type {
   ApiDefinitionRepository,

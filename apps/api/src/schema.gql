@@ -37,6 +37,14 @@ input CreateProjectInput {
   workspaceId: String!
 }
 
+input CreateRestEndpointInput {
+  apiDefinitionId: ID!
+  description: String
+  method: HttpMethod!
+  name: String!
+  path: String!
+}
+
 input CreateWorkspaceInput {
   description: String
   name: String!
@@ -66,9 +74,21 @@ type HealthModel {
   uptimeSeconds: Int!
 }
 
+"""The HTTP method used by a REST endpoint"""
+enum HttpMethod {
+  DELETE
+  GET
+  HEAD
+  OPTIONS
+  PATCH
+  POST
+  PUT
+}
+
 type Mutation {
   createApiDefinition(input: CreateApiDefinitionInput!): ApiDefinitionModel!
   createProject(input: CreateProjectInput!): ProjectModel!
+  createRestEndpoint(input: CreateRestEndpointInput!): RestEndpointModel!
   createWorkspace(input: CreateWorkspaceInput!): WorkspaceModel!
   deleteProject(projectId: ID!): ProjectModel!
   permanentlyDeleteProject(projectId: ID!): Boolean!
@@ -98,6 +118,17 @@ type Query {
   health: HealthModel!
   project(id: ID!): ProjectModel!
   projectsByWorkspace(input: GetProjectsByWorkspaceInput!): ProjectListModel!
+}
+
+type RestEndpointModel {
+  apiDefinitionId: ID!
+  createdAt: DateTime!
+  description: String
+  id: ID!
+  method: HttpMethod!
+  name: String!
+  path: String!
+  updatedAt: DateTime!
 }
 
 input UpdateProjectInput {

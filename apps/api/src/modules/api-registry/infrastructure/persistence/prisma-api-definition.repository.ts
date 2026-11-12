@@ -13,7 +13,7 @@ import {
 
 import {
   ApiProtocol,
-} from '../../domain/api-protocol.enum.js';
+} from '../../domain/enums/api-protocol.enum.js';
 
 import {
   ApiDefinitionRepository,

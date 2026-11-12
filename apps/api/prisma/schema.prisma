@@ -1,3 +1,4 @@
+
 generator client {
   provider = "prisma-client"
   output   = "../src/generated/prisma"
@@ -13,6 +14,18 @@ enum ApiProtocol {
   GRPC
 
   @@map("api_protocol")
+}
+
+enum HttpMethod {
+  GET
+  POST
+  PUT
+  PATCH
+  DELETE
+  HEAD
+  OPTIONS
+
+  @@map("http_method")
 }
 
 model Workspace {
@@ -51,18 +64,39 @@ model Project {
 }
 
 model ApiDefinition {
-  id        String      @id @default(uuid()) @db.Uuid
-  projectId String      @map("project_id") @db.Uuid
-  name      String      @db.VarChar(120)
-  description String?   @db.VarChar(500)
-  protocol  ApiProtocol
+  id          String      @id @default(uuid()) @db.Uuid
+  projectId   String      @map("project_id") @db.Uuid
+  name        String      @db.VarChar(120)
+  description String?     @db.VarChar(500)
+  protocol    ApiProtocol
 
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
   project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
 
+  restEndpoints RestEndpoint[]
+
   @@unique([projectId, name])
   @@index([projectId])
   @@map("api_definitions")
+}
+
+model RestEndpoint {
+  id              String     @id @default(uuid()) @db.Uuid
+  apiDefinitionId String     @map("api_definition_id") @db.Uuid
+
+  name        String      @db.VarChar(120)
+  description String?     @db.VarChar(500)
+  method      HttpMethod
+  path        String      @db.VarChar(500)
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  apiDefinition ApiDefinition @relation(fields: [apiDefinitionId], references: [id], onDelete: Cascade)
+
+  @@unique([apiDefinitionId, method, path])
+  @@index([apiDefinitionId])
+  @@map("rest_endpoints")
 }

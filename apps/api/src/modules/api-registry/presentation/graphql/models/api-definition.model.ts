@@ -7,7 +7,7 @@ import {
   registerEnumType,
 } from '@nestjs/graphql';
 
-import { ApiProtocol } from '../../../domain/api-protocol.enum.js';
+import { ApiProtocol } from '../../../domain/enums/api-protocol.enum.js';
 
 registerEnumType(ApiProtocol, {
   name: 'ApiProtocol',

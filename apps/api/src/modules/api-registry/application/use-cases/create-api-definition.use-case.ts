@@ -6,7 +6,7 @@ import {
   InvalidApiDefinitionError,
 } from '../../domain/entities/api-definition.entity.js';
 
-import { ApiProtocol } from '../../domain/api-protocol.enum.js';
+import { ApiProtocol } from '../../domain/enums/api-protocol.enum.js';
 
 import {
   ApiDefinitionRepository,

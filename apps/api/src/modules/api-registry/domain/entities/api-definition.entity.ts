@@ -1,6 +1,6 @@
 // API Definition domain entity.
 
-import { ApiProtocol } from '../api-protocol.enum.js';
+import { ApiProtocol } from '../enums/api-protocol.enum.js';
 
 export class InvalidApiDefinitionError extends Error {
   constructor(message: string) {

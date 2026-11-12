@@ -5,7 +5,7 @@ import {
   InvalidApiDefinitionError,
 } from './api-definition.entity.js';
 
-import { ApiProtocol } from '../api-protocol.enum.js';
+import { ApiProtocol } from '../enums/api-protocol.enum.js';
 
 describe('ApiDefinition', () => {
   const validProps = {

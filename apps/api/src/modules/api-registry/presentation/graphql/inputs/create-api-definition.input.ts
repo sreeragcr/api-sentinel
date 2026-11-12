@@ -10,7 +10,7 @@ import {
   MinLength,
 } from 'class-validator';
 
-import { ApiProtocol } from '../../../domain/api-protocol.enum.js';
+import { ApiProtocol } from '../../../domain/enums/api-protocol.enum.js';
 
 @InputType()
 export class CreateApiDefinitionInput {
