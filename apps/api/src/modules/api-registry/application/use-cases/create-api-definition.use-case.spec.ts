@@ -34,6 +34,10 @@ describe('CreateApiDefinitionUseCase', () => {
   const findByProjectIdAndName =
     vi.fn<ApiDefinitionRepository['findByProjectIdAndName']>();
 
+  // Added mock for the new repository method
+  const findByProjectId =
+    vi.fn<ApiDefinitionRepository['findByProjectId']>();
+
   const existsById =
     vi.fn<ProjectExistenceChecker['existsById']>();
 
@@ -41,6 +45,10 @@ describe('CreateApiDefinitionUseCase', () => {
     save,
     findById,
     findByProjectIdAndName,
+    findByProjectId: vi.fn().mockResolvedValue({
+    items: [],
+    totalCount: 0,
+  }),
   };
 
   const projectExistenceChecker: ProjectExistenceChecker = {
@@ -53,10 +61,15 @@ describe('CreateApiDefinitionUseCase', () => {
     save.mockReset();
     findById.mockReset();
     findByProjectIdAndName.mockReset();
+    findByProjectId.mockReset();
     existsById.mockReset();
 
     existsById.mockResolvedValue(true);
     findByProjectIdAndName.mockResolvedValue(null);
+    findByProjectId.mockResolvedValue({
+      items: [],
+      totalCount: 0,
+    });
     findById.mockResolvedValue(null);
 
     save.mockImplementation(async (apiDefinition) => apiDefinition);

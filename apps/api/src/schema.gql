@@ -2,6 +2,35 @@
 # THIS FILE WAS AUTOMATICALLY GENERATED (DO NOT MODIFY)
 # ------------------------------------------------------
 
+type ApiDefinitionListModel {
+  items: [ApiDefinitionModel!]!
+  totalCount: Int!
+}
+
+type ApiDefinitionModel {
+  createdAt: DateTime!
+  description: String
+  id: ID!
+  name: String!
+  projectId: ID!
+  protocol: ApiProtocol!
+  updatedAt: DateTime!
+}
+
+"""The protocol used by the registered API"""
+enum ApiProtocol {
+  GRAPHQL
+  GRPC
+  REST
+}
+
+input CreateApiDefinitionInput {
+  description: String
+  name: String!
+  projectId: ID!
+  protocol: ApiProtocol!
+}
+
 input CreateProjectInput {
   description: String
   name: String!
@@ -18,6 +47,12 @@ A date-time string at UTC, such as 2019-12-03T09:54:33Z, compliant with the date
 """
 scalar DateTime
 
+input GetApiDefinitionsByProjectInput {
+  limit: Int! = 20
+  offset: Int! = 0
+  projectId: ID!
+}
+
 input GetProjectsByWorkspaceInput {
   limit: Int! = 20
   offset: Int! = 0
@@ -32,6 +67,7 @@ type HealthModel {
 }
 
 type Mutation {
+  createApiDefinition(input: CreateApiDefinitionInput!): ApiDefinitionModel!
   createProject(input: CreateProjectInput!): ProjectModel!
   createWorkspace(input: CreateWorkspaceInput!): WorkspaceModel!
   deleteProject(projectId: ID!): ProjectModel!
@@ -56,6 +92,8 @@ type ProjectModel {
 }
 
 type Query {
+  apiDefinition(id: ID!): ApiDefinitionModel!
+  apiDefinitionsByProject(input: GetApiDefinitionsByProjectInput!): ApiDefinitionListModel!
   deletedProjectsByWorkspace(input: GetProjectsByWorkspaceInput!): ProjectListModel!
   health: HealthModel!
   project(id: ID!): ProjectModel!
