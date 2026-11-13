@@ -43,6 +43,7 @@ describe('CreateRestEndpointUseCase', () => {
 
   const restEndpointRepository: RestEndpointRepository = {
     save,
+    update: vi.fn(),
     findById: vi.fn<RestEndpointRepository['findById']>(),
     findByApiDefinitionIdAndMethodAndPath,
     findByApiDefinitionId: vi.fn(),

@@ -100,6 +100,7 @@ type Mutation {
   permanentlyDeleteProject(projectId: ID!): Boolean!
   restoreProject(projectId: ID!): ProjectModel!
   updateProject(input: UpdateProjectInput!): ProjectModel!
+  updateRestEndpoint(input: UpdateRestEndpointInput!): RestEndpointModel!
 }
 
 type ProjectListModel {
@@ -148,6 +149,14 @@ input UpdateProjectInput {
   description: String
   name: String
   projectId: ID!
+}
+
+input UpdateRestEndpointInput {
+  description: String
+  id: ID!
+  method: HttpMethod!
+  name: String!
+  path: String!
 }
 
 type WorkspaceModel {

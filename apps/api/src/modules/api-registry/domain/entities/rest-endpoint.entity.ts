@@ -19,6 +19,13 @@ interface RestEndpointProps {
   updatedAt: Date;
 }
 
+interface UpdateRestEndpointProps {
+  name: string;
+  description?: string | null;
+  method: HttpMethod;
+  path: string;
+}
+
 export class RestEndpoint {
   private constructor(
     public readonly id: string,
@@ -96,6 +103,28 @@ export class RestEndpoint {
       path,
       now,
       now,
+    );
+  }
+
+  update(props: UpdateRestEndpointProps): RestEndpoint {
+    const updatedEndpoint = RestEndpoint.create({
+      id: this.id,
+      apiDefinitionId: this.apiDefinitionId,
+      name: props.name,
+      description: props.description,
+      method: props.method,
+      path: props.path,
+    });
+
+    return new RestEndpoint(
+      updatedEndpoint.id,
+      updatedEndpoint.apiDefinitionId,
+      updatedEndpoint.name,
+      updatedEndpoint.description,
+      updatedEndpoint.method,
+      updatedEndpoint.path,
+      this.createdAt,
+      new Date(),
     );
   }
 

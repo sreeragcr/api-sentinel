@@ -243,6 +243,156 @@ describe('RestEndpoint', () => {
     });
   });
 
+
+  describe('update()', () => {
+    const createExistingEndpoint = () =>
+      RestEndpoint.reconstitute({
+        id: 'endpoint-123',
+        apiDefinitionId: 'api-definition-123',
+        name: 'Get Users',
+        description: 'Retrieve users',
+        method: HttpMethod.GET,
+        path: '/users',
+        createdAt: new Date('2026-01-01T10:00:00.000Z'),
+        updatedAt: new Date('2026-01-02T10:00:00.000Z'),
+      });
+
+    it('should update a REST endpoint successfully', () => {
+      const endpoint = createExistingEndpoint();
+
+      const result = endpoint.update({
+        name: 'Create User',
+        description: 'Create a new user',
+        method: HttpMethod.POST,
+        path: '/users/create',
+      });
+
+      expect(result).toBeInstanceOf(RestEndpoint);
+      expect(result.id).toBe(endpoint.id);
+      expect(result.apiDefinitionId).toBe(endpoint.apiDefinitionId);
+      expect(result.name).toBe('Create User');
+      expect(result.description).toBe('Create a new user');
+      expect(result.method).toBe(HttpMethod.POST);
+      expect(result.path).toBe('/users/create');
+    });
+
+    it('should trim updated name and path', () => {
+      const endpoint = createExistingEndpoint();
+
+      const result = endpoint.update({
+        name: '  Create User  ',
+        method: HttpMethod.POST,
+        path: '  /users/create  ',
+      });
+
+      expect(result.name).toBe('Create User');
+      expect(result.path).toBe('/users/create');
+    });
+
+    it('should trim updated description', () => {
+      const endpoint = createExistingEndpoint();
+
+      const result = endpoint.update({
+        name: 'Get Users',
+        description: '  Retrieve all users  ',
+        method: HttpMethod.GET,
+        path: '/users',
+      });
+
+      expect(result.description).toBe('Retrieve all users');
+    });
+
+    it('should set description to null when not provided', () => {
+      const endpoint = createExistingEndpoint();
+
+      const result = endpoint.update({
+        name: 'Get Users',
+        method: HttpMethod.GET,
+        path: '/users',
+      });
+
+      expect(result.description).toBeNull();
+    });
+
+    it('should preserve endpoint identity and creation timestamp', () => {
+      const endpoint = createExistingEndpoint();
+
+      const result = endpoint.update({
+        name: 'Updated Users',
+        method: HttpMethod.GET,
+        path: '/users',
+      });
+
+      expect(result.id).toBe(endpoint.id);
+      expect(result.apiDefinitionId).toBe(endpoint.apiDefinitionId);
+      expect(result.createdAt).toBe(endpoint.createdAt);
+    });
+
+    it('should update the updatedAt timestamp', () => {
+      const endpoint = createExistingEndpoint();
+
+      const result = endpoint.update({
+        name: 'Updated Users',
+        method: HttpMethod.GET,
+        path: '/users',
+      });
+
+      expect(result.updatedAt.getTime()).toBeGreaterThan(
+        endpoint.updatedAt.getTime(),
+      );
+    });
+
+    it('should reject an empty updated name', () => {
+      const endpoint = createExistingEndpoint();
+
+      expect(() =>
+        endpoint.update({
+          name: '   ',
+          method: HttpMethod.GET,
+          path: '/users',
+        }),
+      ).toThrow(InvalidRestEndpointError);
+    });
+
+    it('should reject an unsupported updated HTTP method', () => {
+      const endpoint = createExistingEndpoint();
+
+      expect(() =>
+        endpoint.update({
+          name: 'Get Users',
+          method: 'FETCH' as HttpMethod,
+          path: '/users',
+        }),
+      ).toThrow(InvalidRestEndpointError);
+    });
+
+    it('should reject an invalid updated path', () => {
+      const endpoint = createExistingEndpoint();
+
+      expect(() =>
+        endpoint.update({
+          name: 'Get Users',
+          method: HttpMethod.GET,
+          path: 'users',
+        }),
+      ).toThrow(InvalidRestEndpointError);
+    });
+
+    it('should reject an updated description longer than 500 characters', () => {
+      const endpoint = createExistingEndpoint();
+
+      expect(() =>
+        endpoint.update({
+          name: 'Get Users',
+          description: 'A'.repeat(501),
+          method: HttpMethod.GET,
+          path: '/users',
+        }),
+      ).toThrow(InvalidRestEndpointError);
+    });
+  });
+
+
   describe('reconstitute()', () => {
     it('should reconstitute a REST endpoint from existing data', () => {
       const createdAt = new Date('2026-01-01T10:00:00.000Z');

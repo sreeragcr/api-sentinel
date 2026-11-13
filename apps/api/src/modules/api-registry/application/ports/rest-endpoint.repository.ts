@@ -19,6 +19,8 @@ export interface RestEndpointListResult {
 export interface RestEndpointRepository {
   save(restEndpoint: RestEndpoint): Promise<RestEndpoint>;
 
+  update(restEndpoint: RestEndpoint): Promise<RestEndpoint>;
+
   findById(id: string): Promise<RestEndpoint | null>;
 
   findByApiDefinitionIdAndMethodAndPath(

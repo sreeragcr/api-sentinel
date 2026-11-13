@@ -24,6 +24,10 @@ import {
 } from '../../application/use-cases/get-rest-endpoints-by-api-definition.use-case.js';
 
 import {
+  UpdateRestEndpointUseCase,
+} from '../../application/use-cases/update-rest-endpoint.use-case.js';
+
+import {
   DuplicateRestEndpointError,
 } from '../../application/errors/duplicate-rest-endpoint.error.js';
 
@@ -44,6 +48,10 @@ import {
 } from './inputs/create-rest-endpoint.input.js';
 
 import {
+  UpdateRestEndpointInput,
+} from './inputs/update-rest-endpoint.input.js';
+
+import {
   GetRestEndpointsByApiDefinitionInput,
 } from './inputs/get-rest-endpoints-by-api-definition.input.js';
 
@@ -61,6 +69,7 @@ export class RestEndpointResolver {
     private readonly createRestEndpointUseCase: CreateRestEndpointUseCase,
     private readonly getRestEndpointByIdUseCase: GetRestEndpointByIdUseCase,
     private readonly getRestEndpointsByApiDefinitionUseCase: GetRestEndpointsByApiDefinitionUseCase,
+    private readonly updateRestEndpointUseCase: UpdateRestEndpointUseCase,
   ) {}
 
   @Mutation(() => RestEndpointModel)
@@ -77,6 +86,33 @@ export class RestEndpointResolver {
       }
 
       if (error instanceof ApiDefinitionNotFoundError) {
+        throw new GraphQLError(error.message, {
+          extensions: { code: 'NOT_FOUND' },
+        });
+      }
+
+      if (error instanceof InvalidRestEndpointError) {
+        throw new BadRequestException(error.message);
+      }
+
+      throw error;
+    }
+  }
+
+  @Mutation(() => RestEndpointModel)
+  async updateRestEndpoint(
+    @Args('input') input: UpdateRestEndpointInput,
+  ): Promise<RestEndpointModel> {
+    try {
+      return await this.updateRestEndpointUseCase.execute(input);
+    } catch (error: unknown) {
+      if (error instanceof DuplicateRestEndpointError) {
+        throw new GraphQLError(error.message, {
+          extensions: { code: 'CONFLICT' },
+        });
+      }
+
+      if (error instanceof RestEndpointNotFoundError) {
         throw new GraphQLError(error.message, {
           extensions: { code: 'NOT_FOUND' },
         });

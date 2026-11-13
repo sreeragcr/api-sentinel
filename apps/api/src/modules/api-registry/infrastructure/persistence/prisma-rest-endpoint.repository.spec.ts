@@ -15,6 +15,7 @@ import { ApiDefinitionNotFoundError } from '../../application/errors/api-definit
 
 describe('PrismaRestEndpointRepository', () => {
   const create = vi.fn();
+  const update = vi.fn();
   const findUnique = vi.fn();
   const findMany = vi.fn();
   const count = vi.fn();
@@ -22,6 +23,7 @@ describe('PrismaRestEndpointRepository', () => {
   const prisma = {
     restEndpoint: {
       create,
+      update,
       findUnique,
       findMany,
       count,
@@ -57,6 +59,7 @@ describe('PrismaRestEndpointRepository', () => {
 
   beforeEach(() => {
     create.mockReset();
+    update.mockReset();
     findUnique.mockReset();
     findMany.mockReset();
     count.mockReset();
@@ -133,6 +136,99 @@ describe('PrismaRestEndpointRepository', () => {
 
       await expect(
         repository.save(endpoint),
+      ).rejects.toBe(databaseError);
+    });
+  });
+
+  describe('update()', () => {
+    it('should update and return a REST endpoint successfully', async () => {
+      const endpoint = createEndpoint().update({
+        name: 'Get All Users',
+        description: 'Retrieve all registered users',
+        method: HttpMethod.GET,
+        path: '/users',
+      });
+
+      const record = {
+        id: endpoint.id,
+        apiDefinitionId: endpoint.apiDefinitionId,
+        name: endpoint.name,
+        description: endpoint.description,
+        method: endpoint.method,
+        path: endpoint.path,
+        createdAt: endpoint.createdAt,
+        updatedAt: endpoint.updatedAt,
+      };
+
+      update.mockResolvedValue(record);
+
+      const result = await repository.update(endpoint);
+
+      expect(result).toBeInstanceOf(RestEndpoint);
+      expect(result.id).toBe(endpoint.id);
+      expect(result.name).toBe('Get All Users');
+      expect(result.description).toBe(
+        'Retrieve all registered users',
+      );
+      expect(result.method).toBe(HttpMethod.GET);
+      expect(result.path).toBe('/users');
+
+      expect(update).toHaveBeenCalledWith({
+        where: {
+          id: endpoint.id,
+        },
+        data: {
+          name: endpoint.name,
+          description: endpoint.description,
+          method: HttpMethod.GET,
+          path: endpoint.path,
+        },
+      });
+    });
+
+    it('should map Prisma P2002 to DuplicateRestEndpointError', async () => {
+      const endpoint = createEndpoint().update({
+        name: 'Create User',
+        description: 'Create a new user',
+        method: HttpMethod.POST,
+        path: '/users',
+      });
+
+      update.mockRejectedValue({
+        code: 'P2002',
+      });
+
+      await expect(
+        repository.update(endpoint),
+      ).rejects.toBeInstanceOf(DuplicateRestEndpointError);
+
+      expect(update).toHaveBeenCalledOnce();
+    });
+
+    it('should map Prisma P2025 to RestEndpointNotFoundError', async () => {
+      const endpoint = createEndpoint();
+
+      update.mockRejectedValue({
+        code: 'P2025',
+      });
+
+      await expect(
+        repository.update(endpoint),
+      ).rejects.toMatchObject({
+        name: 'RestEndpointNotFoundError',
+      });
+
+      expect(update).toHaveBeenCalledOnce();
+    });
+
+    it('should propagate unexpected database errors', async () => {
+      const endpoint = createEndpoint();
+      const databaseError = new Error('Database unavailable');
+
+      update.mockRejectedValue(databaseError);
+
+      await expect(
+        repository.update(endpoint),
       ).rejects.toBe(databaseError);
     });
   });

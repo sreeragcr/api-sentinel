@@ -1,7 +1,8 @@
-
 import { Injectable } from '@nestjs/common';
 
 import { PrismaService } from '../../../../shared/infrastructure/database/prisma.service.js';
+
+import { RestEndpointNotFoundError } from '../../application/errors/rest-endpoint-not-found.error.js';
 
 import {
   HttpMethod as PrismaHttpMethod,
@@ -79,6 +80,50 @@ export class PrismaRestEndpointRepository
       throw error;
     }
   }
+
+
+  async update(restEndpoint: RestEndpoint): Promise<RestEndpoint> {
+    try {
+      const record = await this.prisma.restEndpoint.update({
+        where: {
+          id: restEndpoint.id,
+        },
+        data: {
+          name: restEndpoint.name,
+          description: restEndpoint.description,
+          method: this.toPrismaHttpMethod(restEndpoint.method),
+          path: restEndpoint.path,
+        },
+      });
+
+      return this.toDomainEntity(record);
+    } catch (error: unknown) {
+      if (
+        typeof error === 'object' &&
+        error !== null &&
+        'code' in error &&
+        error.code === 'P2002'
+      ) {
+        throw new DuplicateRestEndpointError(
+          restEndpoint.apiDefinitionId,
+          restEndpoint.method,
+          restEndpoint.path,
+        );
+      }
+
+      if (
+        typeof error === 'object' &&
+        error !== null &&
+        'code' in error &&
+        error.code === 'P2025'
+      ) {
+        throw new RestEndpointNotFoundError(restEndpoint.id);
+      }
+
+      throw error;
+    }
+  }
+
 
   async findById(id: string): Promise<RestEndpoint | null> {
     const record = await this.prisma.restEndpoint.findUnique({
