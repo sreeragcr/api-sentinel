@@ -40,6 +40,7 @@ describe('UpdateRestEndpointUseCase', () => {
   const restEndpointRepository: RestEndpointRepository = {
     save: vi.fn(),
     update,
+    delete: vi.fn(),
     findById,
     findByApiDefinitionIdAndMethodAndPath,
     findByApiDefinitionId: vi.fn(),

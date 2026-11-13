@@ -28,6 +28,10 @@ import {
 } from '../../application/use-cases/update-rest-endpoint.use-case.js';
 
 import {
+  DeleteRestEndpointUseCase,
+} from '../../application/use-cases/delete-rest-endpoint.use-case.js';
+
+import {
   DuplicateRestEndpointError,
 } from '../../application/errors/duplicate-rest-endpoint.error.js';
 
@@ -70,6 +74,7 @@ export class RestEndpointResolver {
     private readonly getRestEndpointByIdUseCase: GetRestEndpointByIdUseCase,
     private readonly getRestEndpointsByApiDefinitionUseCase: GetRestEndpointsByApiDefinitionUseCase,
     private readonly updateRestEndpointUseCase: UpdateRestEndpointUseCase,
+    private readonly deleteRestEndpointUseCase: DeleteRestEndpointUseCase,
   ) {}
 
   @Mutation(() => RestEndpointModel)
@@ -120,6 +125,25 @@ export class RestEndpointResolver {
 
       if (error instanceof InvalidRestEndpointError) {
         throw new BadRequestException(error.message);
+      }
+
+      throw error;
+    }
+  }
+
+  @Mutation(() => Boolean)
+  async deleteRestEndpoint(
+    @Args('id', { type: () => ID }) id: string,
+  ): Promise<boolean> {
+    try {
+      await this.deleteRestEndpointUseCase.execute(id);
+
+      return true;
+    } catch (error: unknown) {
+      if (error instanceof RestEndpointNotFoundError) {
+        throw new GraphQLError(error.message, {
+          extensions: { code: 'NOT_FOUND' },
+        });
       }
 
       throw error;

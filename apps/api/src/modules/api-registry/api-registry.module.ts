@@ -25,6 +25,7 @@ import { CreateRestEndpointUseCase } from './application/use-cases/create-rest-e
 import { GetRestEndpointByIdUseCase } from './application/use-cases/get-rest-endpoint-by-id.use-case.js';
 import { GetRestEndpointsByApiDefinitionUseCase } from './application/use-cases/get-rest-endpoints-by-api-definition.use-case.js';
 import { UpdateRestEndpointUseCase } from './application/use-cases/update-rest-endpoint.use-case.js';
+import { DeleteRestEndpointUseCase } from './application/use-cases/delete-rest-endpoint.use-case.js';
 
 import { PrismaApiDefinitionRepository } from './infrastructure/persistence/prisma-api-definition.repository.js';
 import { PrismaRestEndpointRepository } from './infrastructure/persistence/prisma-rest-endpoint.repository.js';
@@ -141,6 +142,16 @@ import { RestEndpointResolver } from './presentation/graphql/rest-endpoint.resol
           restEndpointRepository,
         ),
     },
+    {
+      provide: DeleteRestEndpointUseCase,
+      inject: [REST_ENDPOINT_REPOSITORY],
+      useFactory: (
+        restEndpointRepository: RestEndpointRepository,
+      ) =>
+        new DeleteRestEndpointUseCase(
+          restEndpointRepository,
+        ),
+    },
   ],
 
   exports: [
@@ -151,6 +162,7 @@ import { RestEndpointResolver } from './presentation/graphql/rest-endpoint.resol
     GetRestEndpointByIdUseCase,
     GetRestEndpointsByApiDefinitionUseCase,
     UpdateRestEndpointUseCase,
+    DeleteRestEndpointUseCase,
   ],
 })
 export class ApiRegistryModule {}

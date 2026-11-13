@@ -42,6 +42,7 @@ describe('GetRestEndpointsByApiDefinitionUseCase', () => {
   const restEndpointRepository: RestEndpointRepository = {
     save: vi.fn(),
     update: vi.fn(),
+    delete: vi.fn(),
     findById: vi.fn(),
     findByApiDefinitionIdAndMethodAndPath: vi.fn(),
     findByApiDefinitionId,

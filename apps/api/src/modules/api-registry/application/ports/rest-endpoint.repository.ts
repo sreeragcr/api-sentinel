@@ -21,6 +21,8 @@ export interface RestEndpointRepository {
 
   update(restEndpoint: RestEndpoint): Promise<RestEndpoint>;
 
+  delete(id: string): Promise<void>;
+
   findById(id: string): Promise<RestEndpoint | null>;
 
   findByApiDefinitionIdAndMethodAndPath(

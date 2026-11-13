@@ -125,6 +125,29 @@ export class PrismaRestEndpointRepository
   }
 
 
+  async delete(id: string): Promise<void> {
+    try {
+      await this.prisma.restEndpoint.delete({
+        where: {
+          id,
+        },
+      });
+    } catch (error: unknown) {
+      if (
+        typeof error === 'object' &&
+        error !== null &&
+        'code' in error &&
+        error.code === 'P2025'
+      ) {
+        throw new RestEndpointNotFoundError(id);
+      }
+
+      throw error;
+    }
+  }
+
+
+
   async findById(id: string): Promise<RestEndpoint | null> {
     const record = await this.prisma.restEndpoint.findUnique({
       where: {

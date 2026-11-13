@@ -13,9 +13,12 @@ import { DuplicateRestEndpointError } from '../../application/errors/duplicate-r
 
 import { ApiDefinitionNotFoundError } from '../../application/errors/api-definition-not-found.error.js';
 
+import { RestEndpointNotFoundError } from '../../application/errors/rest-endpoint-not-found.error.js';
+
 describe('PrismaRestEndpointRepository', () => {
   const create = vi.fn();
   const update = vi.fn();
+  const deleteEndpoint = vi.fn();
   const findUnique = vi.fn();
   const findMany = vi.fn();
   const count = vi.fn();
@@ -24,6 +27,7 @@ describe('PrismaRestEndpointRepository', () => {
     restEndpoint: {
       create,
       update,
+      delete: deleteEndpoint,
       findUnique,
       findMany,
       count,
@@ -60,6 +64,7 @@ describe('PrismaRestEndpointRepository', () => {
   beforeEach(() => {
     create.mockReset();
     update.mockReset();
+    deleteEndpoint.mockReset();
     findUnique.mockReset();
     findMany.mockReset();
     count.mockReset();
@@ -232,6 +237,48 @@ describe('PrismaRestEndpointRepository', () => {
       ).rejects.toBe(databaseError);
     });
   });
+
+
+  describe('delete()', () => {
+    it('should delete a REST endpoint successfully', async () => {
+      deleteEndpoint.mockResolvedValue(createRecord());
+
+      await expect(
+        repository.delete('endpoint-123'),
+      ).resolves.toBeUndefined();
+
+      expect(deleteEndpoint).toHaveBeenCalledWith({
+        where: {
+          id: 'endpoint-123',
+        },
+      });
+
+      expect(deleteEndpoint).toHaveBeenCalledOnce();
+    });
+
+    it('should map Prisma P2025 to RestEndpointNotFoundError', async () => {
+      deleteEndpoint.mockRejectedValue({
+        code: 'P2025',
+      });
+
+      await expect(
+        repository.delete('missing-endpoint'),
+      ).rejects.toBeInstanceOf(RestEndpointNotFoundError);
+
+      expect(deleteEndpoint).toHaveBeenCalledOnce();
+    });
+
+    it('should propagate unexpected database errors', async () => {
+      const databaseError = new Error('Database unavailable');
+
+      deleteEndpoint.mockRejectedValue(databaseError);
+
+      await expect(
+        repository.delete('endpoint-123'),
+      ).rejects.toBe(databaseError);
+    });
+  });
+
 
   describe('findById()', () => {
     it('should return a REST endpoint when found', async () => {

@@ -97,6 +97,7 @@ type Mutation {
   createRestEndpoint(input: CreateRestEndpointInput!): RestEndpointModel!
   createWorkspace(input: CreateWorkspaceInput!): WorkspaceModel!
   deleteProject(projectId: ID!): ProjectModel!
+  deleteRestEndpoint(id: ID!): Boolean!
   permanentlyDeleteProject(projectId: ID!): Boolean!
   restoreProject(projectId: ID!): ProjectModel!
   updateProject(input: UpdateProjectInput!): ProjectModel!
