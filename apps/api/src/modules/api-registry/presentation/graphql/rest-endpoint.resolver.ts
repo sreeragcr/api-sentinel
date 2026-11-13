@@ -3,7 +3,9 @@ import { BadRequestException } from '@nestjs/common';
 
 import {
   Args,
+  ID,
   Mutation,
+  Query,
   Resolver,
 } from '@nestjs/graphql';
 
@@ -14,12 +16,24 @@ import {
 } from '../../application/use-cases/create-rest-endpoint.use-case.js';
 
 import {
+  GetRestEndpointByIdUseCase,
+} from '../../application/use-cases/get-rest-endpoint-by-id.use-case.js';
+
+import {
+  GetRestEndpointsByApiDefinitionUseCase,
+} from '../../application/use-cases/get-rest-endpoints-by-api-definition.use-case.js';
+
+import {
   DuplicateRestEndpointError,
 } from '../../application/errors/duplicate-rest-endpoint.error.js';
 
 import {
   ApiDefinitionNotFoundError,
 } from '../../application/errors/api-definition-not-found.error.js';
+
+import {
+  RestEndpointNotFoundError,
+} from '../../application/errors/rest-endpoint-not-found.error.js';
 
 import {
   InvalidRestEndpointError,
@@ -30,13 +44,23 @@ import {
 } from './inputs/create-rest-endpoint.input.js';
 
 import {
+  GetRestEndpointsByApiDefinitionInput,
+} from './inputs/get-rest-endpoints-by-api-definition.input.js';
+
+import {
   RestEndpointModel,
 } from './models/rest-endpoint.model.js';
+
+import {
+  RestEndpointListModel,
+} from './models/rest-endpoint-list.model.js';
 
 @Resolver(() => RestEndpointModel)
 export class RestEndpointResolver {
   constructor(
     private readonly createRestEndpointUseCase: CreateRestEndpointUseCase,
+    private readonly getRestEndpointByIdUseCase: GetRestEndpointByIdUseCase,
+    private readonly getRestEndpointsByApiDefinitionUseCase: GetRestEndpointsByApiDefinitionUseCase,
   ) {}
 
   @Mutation(() => RestEndpointModel)
@@ -60,6 +84,42 @@ export class RestEndpointResolver {
 
       if (error instanceof InvalidRestEndpointError) {
         throw new BadRequestException(error.message);
+      }
+
+      throw error;
+    }
+  }
+
+  @Query(() => RestEndpointModel)
+  async restEndpoint(
+    @Args('id', { type: () => ID }) id: string,
+  ): Promise<RestEndpointModel> {
+    try {
+      return await this.getRestEndpointByIdUseCase.execute(id);
+    } catch (error: unknown) {
+      if (error instanceof RestEndpointNotFoundError) {
+        throw new GraphQLError(error.message, {
+          extensions: { code: 'NOT_FOUND' },
+        });
+      }
+
+      throw error;
+    }
+  }
+
+  @Query(() => RestEndpointListModel)
+  async restEndpointsByApiDefinition(
+    @Args('input') input: GetRestEndpointsByApiDefinitionInput,
+  ): Promise<RestEndpointListModel> {
+    try {
+      return await this.getRestEndpointsByApiDefinitionUseCase.execute(
+        input,
+      );
+    } catch (error: unknown) {
+      if (error instanceof ApiDefinitionNotFoundError) {
+        throw new GraphQLError(error.message, {
+          extensions: { code: 'NOT_FOUND' },
+        });
       }
 
       throw error;

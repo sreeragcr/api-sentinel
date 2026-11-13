@@ -19,21 +19,17 @@ import {
 } from './application/ports/project-existence-checker.js';
 
 import { CreateApiDefinitionUseCase } from './application/use-cases/create-api-definition.use-case.js';
-
 import { GetApiDefinitionByIdUseCase } from './application/use-cases/get-api-definition-by-id.use-case.js';
-
 import { GetApiDefinitionsByProjectUseCase } from './application/use-cases/get-api-definitions-by-project.use-case.js';
-
 import { CreateRestEndpointUseCase } from './application/use-cases/create-rest-endpoint.use-case.js';
+import { GetRestEndpointByIdUseCase } from './application/use-cases/get-rest-endpoint-by-id.use-case.js';
+import { GetRestEndpointsByApiDefinitionUseCase } from './application/use-cases/get-rest-endpoints-by-api-definition.use-case.js';
 
 import { PrismaApiDefinitionRepository } from './infrastructure/persistence/prisma-api-definition.repository.js';
-
 import { PrismaRestEndpointRepository } from './infrastructure/persistence/prisma-rest-endpoint.repository.js';
-
 import { PrismaProjectExistenceChecker } from './infrastructure/persistence/prisma-project-existence-checker.js';
 
 import { ApiDefinitionResolver } from './presentation/graphql/api-definition.resolver.js';
-
 import { RestEndpointResolver } from './presentation/graphql/rest-endpoint.resolver.js';
 
 @Module({
@@ -41,23 +37,19 @@ import { RestEndpointResolver } from './presentation/graphql/rest-endpoint.resol
 
   providers: [
     ApiDefinitionResolver,
-     RestEndpointResolver,
-
+    RestEndpointResolver,
     {
       provide: API_DEFINITION_REPOSITORY,
       useClass: PrismaApiDefinitionRepository,
     },
-
     {
       provide: REST_ENDPOINT_REPOSITORY,
       useClass: PrismaRestEndpointRepository,
     },
-
     {
       provide: PROJECT_EXISTENCE_CHECKER,
       useClass: PrismaProjectExistenceChecker,
     },
-
     {
       provide: CreateApiDefinitionUseCase,
       inject: [
@@ -73,7 +65,6 @@ import { RestEndpointResolver } from './presentation/graphql/rest-endpoint.resol
           projectExistenceChecker,
         ),
     },
-
     {
       provide: GetApiDefinitionByIdUseCase,
       inject: [API_DEFINITION_REPOSITORY],
@@ -84,7 +75,6 @@ import { RestEndpointResolver } from './presentation/graphql/rest-endpoint.resol
           apiDefinitionRepository,
         ),
     },
-
     {
       provide: GetApiDefinitionsByProjectUseCase,
       inject: [
@@ -100,7 +90,6 @@ import { RestEndpointResolver } from './presentation/graphql/rest-endpoint.resol
           projectExistenceChecker,
         ),
     },
-
     {
       provide: CreateRestEndpointUseCase,
       inject: [
@@ -116,13 +105,39 @@ import { RestEndpointResolver } from './presentation/graphql/rest-endpoint.resol
           apiDefinitionRepository,
         ),
     },
+    {
+      provide: GetRestEndpointByIdUseCase,
+      inject: [REST_ENDPOINT_REPOSITORY],
+      useFactory: (
+        restEndpointRepository: RestEndpointRepository,
+      ) =>
+        new GetRestEndpointByIdUseCase(
+          restEndpointRepository,
+        ),
+    },
+    {
+      provide: GetRestEndpointsByApiDefinitionUseCase,
+      inject: [
+        REST_ENDPOINT_REPOSITORY,
+        API_DEFINITION_REPOSITORY,
+      ],
+      useFactory: (
+        restEndpointRepository: RestEndpointRepository,
+        apiDefinitionRepository: ApiDefinitionRepository,
+      ) =>
+        new GetRestEndpointsByApiDefinitionUseCase(
+          restEndpointRepository,
+          apiDefinitionRepository,
+        ),
+    },
   ],
-
   exports: [
     CreateApiDefinitionUseCase,
     GetApiDefinitionByIdUseCase,
     GetApiDefinitionsByProjectUseCase,
     CreateRestEndpointUseCase,
+    GetRestEndpointByIdUseCase,
+    GetRestEndpointsByApiDefinitionUseCase,
   ],
 })
-export class ApiRegistryModule {}
+export class ApiRegistryModule { }

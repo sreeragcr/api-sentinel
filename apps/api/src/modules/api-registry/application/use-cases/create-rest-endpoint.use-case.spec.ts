@@ -33,9 +33,6 @@ import {
 describe('CreateRestEndpointUseCase', () => {
   const save = vi.fn<RestEndpointRepository['save']>();
 
-  const findEndpointById =
-    vi.fn<RestEndpointRepository['findById']>();
-
   const findByApiDefinitionIdAndMethodAndPath =
     vi.fn<
       RestEndpointRepository['findByApiDefinitionIdAndMethodAndPath']
@@ -46,8 +43,9 @@ describe('CreateRestEndpointUseCase', () => {
 
   const restEndpointRepository: RestEndpointRepository = {
     save,
-    findById: findEndpointById,
+    findById: vi.fn<RestEndpointRepository['findById']>(),
     findByApiDefinitionIdAndMethodAndPath,
+    findByApiDefinitionId: vi.fn(),
   };
 
   const apiDefinitionRepository: ApiDefinitionRepository = {
@@ -68,7 +66,6 @@ describe('CreateRestEndpointUseCase', () => {
 
   beforeEach(() => {
     save.mockReset();
-    findEndpointById.mockReset();
     findByApiDefinitionIdAndMethodAndPath.mockReset();
     findApiDefinitionById.mockReset();
 
@@ -77,8 +74,6 @@ describe('CreateRestEndpointUseCase', () => {
     );
 
     findByApiDefinitionIdAndMethodAndPath.mockResolvedValue(null);
-
-    findEndpointById.mockResolvedValue(null);
 
     save.mockImplementation(async (endpoint) => endpoint);
 

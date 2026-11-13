@@ -67,6 +67,12 @@ input GetProjectsByWorkspaceInput {
   workspaceId: ID!
 }
 
+input GetRestEndpointsByApiDefinitionInput {
+  apiDefinitionId: ID!
+  limit: Int! = 20
+  offset: Int! = 0
+}
+
 type HealthModel {
   service: String!
   status: String!
@@ -118,6 +124,13 @@ type Query {
   health: HealthModel!
   project(id: ID!): ProjectModel!
   projectsByWorkspace(input: GetProjectsByWorkspaceInput!): ProjectListModel!
+  restEndpoint(id: ID!): RestEndpointModel!
+  restEndpointsByApiDefinition(input: GetRestEndpointsByApiDefinitionInput!): RestEndpointListModel!
+}
+
+type RestEndpointListModel {
+  items: [RestEndpointModel!]!
+  totalCount: Int!
 }
 
 type RestEndpointModel {

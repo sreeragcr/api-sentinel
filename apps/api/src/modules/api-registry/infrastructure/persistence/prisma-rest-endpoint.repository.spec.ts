@@ -16,11 +16,15 @@ import { ApiDefinitionNotFoundError } from '../../application/errors/api-definit
 describe('PrismaRestEndpointRepository', () => {
   const create = vi.fn();
   const findUnique = vi.fn();
+  const findMany = vi.fn();
+  const count = vi.fn();
 
   const prisma = {
     restEndpoint: {
       create,
       findUnique,
+      findMany,
+      count,
     },
   };
 
@@ -54,6 +58,8 @@ describe('PrismaRestEndpointRepository', () => {
   beforeEach(() => {
     create.mockReset();
     findUnique.mockReset();
+    findMany.mockReset();
+    count.mockReset();
 
     repository = new PrismaRestEndpointRepository(
       prisma as unknown as PrismaService,
@@ -200,6 +206,91 @@ describe('PrismaRestEndpointRepository', () => {
         );
 
       expect(result).toBeNull();
+    });
+  });
+
+  describe('findByApiDefinitionId()', () => {
+    it('should return paginated endpoints and total count', async () => {
+      const records = [
+        createRecord(),
+        {
+          ...createRecord(),
+          id: 'endpoint-456',
+          name: 'Create User',
+          method: HttpMethod.POST,
+          path: '/users',
+        },
+      ];
+
+      findMany.mockResolvedValue(records);
+      count.mockResolvedValue(5);
+
+      const result = await repository.findByApiDefinitionId(
+        'api-definition-123',
+        {
+          offset: 0,
+          limit: 2,
+        },
+      );
+
+      expect(result.items).toHaveLength(2);
+      expect(result.items[0]).toBeInstanceOf(RestEndpoint);
+      expect(result.items[0].id).toBe('endpoint-123');
+      expect(result.items[1].id).toBe('endpoint-456');
+      expect(result.totalCount).toBe(5);
+
+      expect(findMany).toHaveBeenCalledWith({
+        where: {
+          apiDefinitionId: 'api-definition-123',
+        },
+        skip: 0,
+        take: 2,
+        orderBy: [
+          { createdAt: 'asc' },
+          { id: 'asc' },
+        ],
+      });
+
+      expect(count).toHaveBeenCalledWith({
+        where: {
+          apiDefinitionId: 'api-definition-123',
+        },
+      });
+    });
+
+    it('should return an empty list when no endpoints exist', async () => {
+      findMany.mockResolvedValue([]);
+      count.mockResolvedValue(0);
+
+      const result = await repository.findByApiDefinitionId(
+        'api-definition-123',
+        {
+          offset: 0,
+          limit: 20,
+        },
+      );
+
+      expect(result).toEqual({
+        items: [],
+        totalCount: 0,
+      });
+    });
+
+    it('should propagate database errors', async () => {
+      const databaseError = new Error('Database unavailable');
+
+      findMany.mockRejectedValue(databaseError);
+      count.mockResolvedValue(0);
+
+      await expect(
+        repository.findByApiDefinitionId(
+          'api-definition-123',
+          {
+            offset: 0,
+            limit: 20,
+          },
+        ),
+      ).rejects.toBe(databaseError);
     });
   });
 });

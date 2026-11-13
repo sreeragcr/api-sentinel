@@ -6,6 +6,16 @@ export const REST_ENDPOINT_REPOSITORY = Symbol(
   'REST_ENDPOINT_REPOSITORY',
 );
 
+export interface RestEndpointListOptions {
+  offset: number;
+  limit: number;
+}
+
+export interface RestEndpointListResult {
+  items: RestEndpoint[];
+  totalCount: number;
+}
+
 export interface RestEndpointRepository {
   save(restEndpoint: RestEndpoint): Promise<RestEndpoint>;
 
@@ -16,4 +26,9 @@ export interface RestEndpointRepository {
     method: HttpMethod,
     path: string,
   ): Promise<RestEndpoint | null>;
+
+  findByApiDefinitionId(
+    apiDefinitionId: string,
+    options: RestEndpointListOptions,
+  ): Promise<RestEndpointListResult>;
 }

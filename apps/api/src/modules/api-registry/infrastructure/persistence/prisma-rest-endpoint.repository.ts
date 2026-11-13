@@ -33,7 +33,7 @@ export class PrismaRestEndpointRepository
 
   constructor(
     private readonly prisma: PrismaService,
-  ) {}
+  ) { }
 
   async save(restEndpoint: RestEndpoint): Promise<RestEndpoint> {
     try {
@@ -115,6 +115,46 @@ export class PrismaRestEndpointRepository
 
     return this.toDomainEntity(record);
   }
+
+
+  async findByApiDefinitionId(
+    apiDefinitionId: string,
+    options: {
+      offset: number;
+      limit: number;
+    },
+  ): Promise<{
+    items: RestEndpoint[];
+    totalCount: number;
+  }> {
+    const where = {
+      apiDefinitionId,
+    };
+
+    const [records, totalCount] = await Promise.all([
+      this.prisma.restEndpoint.findMany({
+        where,
+        skip: options.offset,
+        take: options.limit,
+        orderBy: [
+          { createdAt: 'asc' },
+          { id: 'asc' },
+        ],
+      }),
+
+      this.prisma.restEndpoint.count({
+        where,
+      }),
+    ]);
+
+    return {
+      items: records.map((record) =>
+        this.toDomainEntity(record),
+      ),
+      totalCount,
+    };
+  }
+
 
   private toDomainEntity(
     record: {
