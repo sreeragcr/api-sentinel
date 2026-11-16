@@ -24,6 +24,28 @@ enum ApiProtocol {
   REST
 }
 
+input AuthenticationConfigInput {
+  credentialReference: String
+  keyName: String
+  location: String
+  type: AuthenticationType!
+}
+
+type AuthenticationConfigModel {
+  credentialReference: String
+  keyName: String
+  location: String
+  type: AuthenticationType!
+}
+
+"""Authentication method for a REST request"""
+enum AuthenticationType {
+  API_KEY
+  BASIC
+  BEARER
+  NONE
+}
+
 input CreateApiDefinitionInput {
   description: String
   name: String!
@@ -43,6 +65,15 @@ input CreateRestEndpointInput {
   method: HttpMethod!
   name: String!
   path: String!
+}
+
+input CreateRestRequestConfigurationInput {
+  authentication: AuthenticationConfigInput
+  body: RequestBodyInput
+  endpointId: ID!
+  headers: [RequestHeaderInput!]
+  pathParameters: [PathParameterInput!]
+  queryParameters: [QueryParameterInput!]
 }
 
 input CreateWorkspaceInput {
@@ -95,6 +126,7 @@ type Mutation {
   createApiDefinition(input: CreateApiDefinitionInput!): ApiDefinitionModel!
   createProject(input: CreateProjectInput!): ProjectModel!
   createRestEndpoint(input: CreateRestEndpointInput!): RestEndpointModel!
+  createRestRequestConfiguration(input: CreateRestRequestConfigurationInput!): RestRequestConfigurationModel!
   createWorkspace(input: CreateWorkspaceInput!): WorkspaceModel!
   deleteProject(projectId: ID!): ProjectModel!
   deleteRestEndpoint(id: ID!): Boolean!
@@ -102,6 +134,18 @@ type Mutation {
   restoreProject(projectId: ID!): ProjectModel!
   updateProject(input: UpdateProjectInput!): ProjectModel!
   updateRestEndpoint(input: UpdateRestEndpointInput!): RestEndpointModel!
+}
+
+input PathParameterInput {
+  enabled: Boolean!
+  key: String!
+  value: String!
+}
+
+type PathParameterModel {
+  enabled: Boolean!
+  key: String!
+  value: String!
 }
 
 type ProjectListModel {
@@ -128,6 +172,66 @@ type Query {
   projectsByWorkspace(input: GetProjectsByWorkspaceInput!): ProjectListModel!
   restEndpoint(id: ID!): RestEndpointModel!
   restEndpointsByApiDefinition(input: GetRestEndpointsByApiDefinitionInput!): RestEndpointListModel!
+  restRequestConfiguration(endpointId: ID!): RestRequestConfigurationModel
+}
+
+input QueryParameterInput {
+  enabled: Boolean!
+  key: String!
+  value: String!
+}
+
+type QueryParameterModel {
+  enabled: Boolean!
+  key: String!
+  value: String!
+}
+
+input RequestBodyFieldInput {
+  enabled: Boolean!
+  key: String!
+  value: String!
+}
+
+type RequestBodyFieldModel {
+  enabled: Boolean!
+  key: String!
+  value: String!
+}
+
+input RequestBodyInput {
+  content: String
+  contentType: String
+  fields: [RequestBodyFieldInput!]
+  type: RequestBodyType!
+}
+
+type RequestBodyModel {
+  content: String
+  contentType: String
+  fields: [RequestBodyFieldModel!]
+  type: RequestBodyType!
+}
+
+"""Body format for a REST request"""
+enum RequestBodyType {
+  FORM_URLENCODED
+  JSON
+  MULTIPART
+  NONE
+  RAW_TEXT
+}
+
+input RequestHeaderInput {
+  enabled: Boolean!
+  key: String!
+  value: String!
+}
+
+type RequestHeaderModel {
+  enabled: Boolean!
+  key: String!
+  value: String!
 }
 
 type RestEndpointListModel {
@@ -143,6 +247,18 @@ type RestEndpointModel {
   method: HttpMethod!
   name: String!
   path: String!
+  updatedAt: DateTime!
+}
+
+type RestRequestConfigurationModel {
+  authentication: AuthenticationConfigModel!
+  body: RequestBodyModel!
+  createdAt: DateTime!
+  endpointId: ID!
+  headers: [RequestHeaderModel!]!
+  id: ID!
+  pathParameters: [PathParameterModel!]!
+  queryParameters: [QueryParameterModel!]!
   updatedAt: DateTime!
 }
 

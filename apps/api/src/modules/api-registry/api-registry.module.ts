@@ -14,6 +14,11 @@ import {
 } from './application/ports/rest-endpoint.repository.js';
 
 import {
+  REST_REQUEST_CONFIGURATION_REPOSITORY,
+  type RestRequestConfigurationRepository,
+} from './application/ports/rest-request-configuration.repository.js';
+
+import {
   PROJECT_EXISTENCE_CHECKER,
   type ProjectExistenceChecker,
 } from './application/ports/project-existence-checker.js';
@@ -21,18 +26,24 @@ import {
 import { CreateApiDefinitionUseCase } from './application/use-cases/create-api-definition.use-case.js';
 import { GetApiDefinitionByIdUseCase } from './application/use-cases/get-api-definition-by-id.use-case.js';
 import { GetApiDefinitionsByProjectUseCase } from './application/use-cases/get-api-definitions-by-project.use-case.js';
+
 import { CreateRestEndpointUseCase } from './application/use-cases/create-rest-endpoint.use-case.js';
 import { GetRestEndpointByIdUseCase } from './application/use-cases/get-rest-endpoint-by-id.use-case.js';
 import { GetRestEndpointsByApiDefinitionUseCase } from './application/use-cases/get-rest-endpoints-by-api-definition.use-case.js';
 import { UpdateRestEndpointUseCase } from './application/use-cases/update-rest-endpoint.use-case.js';
 import { DeleteRestEndpointUseCase } from './application/use-cases/delete-rest-endpoint.use-case.js';
 
+import { CreateRestRequestConfigurationUseCase } from './application/use-cases/create-rest-request-configuration.use-case.js';
+import { GetRestRequestConfigurationByEndpointIdUseCase } from './application/use-cases/get-rest-request-configuration-by-endpoint-id.use-case.js';
+
 import { PrismaApiDefinitionRepository } from './infrastructure/persistence/prisma-api-definition.repository.js';
 import { PrismaRestEndpointRepository } from './infrastructure/persistence/prisma-rest-endpoint.repository.js';
+import { PrismaRestRequestConfigurationRepository } from './infrastructure/persistence/prisma-rest-request-configuration.repository.js';
 import { PrismaProjectExistenceChecker } from './infrastructure/persistence/prisma-project-existence-checker.js';
 
 import { ApiDefinitionResolver } from './presentation/graphql/api-definition.resolver.js';
 import { RestEndpointResolver } from './presentation/graphql/rest-endpoint.resolver.js';
+import { RestRequestConfigurationResolver } from './presentation/graphql/rest-request-configuration.resolver.js';
 
 @Module({
   imports: [PrismaModule],
@@ -40,6 +51,7 @@ import { RestEndpointResolver } from './presentation/graphql/rest-endpoint.resol
   providers: [
     ApiDefinitionResolver,
     RestEndpointResolver,
+    RestRequestConfigurationResolver,
     {
       provide: API_DEFINITION_REPOSITORY,
       useClass: PrismaApiDefinitionRepository,
@@ -49,9 +61,14 @@ import { RestEndpointResolver } from './presentation/graphql/rest-endpoint.resol
       useClass: PrismaRestEndpointRepository,
     },
     {
+      provide: REST_REQUEST_CONFIGURATION_REPOSITORY,
+      useClass: PrismaRestRequestConfigurationRepository,
+    },
+    {
       provide: PROJECT_EXISTENCE_CHECKER,
       useClass: PrismaProjectExistenceChecker,
     },
+
     {
       provide: CreateApiDefinitionUseCase,
       inject: [
@@ -152,6 +169,33 @@ import { RestEndpointResolver } from './presentation/graphql/rest-endpoint.resol
           restEndpointRepository,
         ),
     },
+
+    // REST request configuration use cases
+    {
+      provide: CreateRestRequestConfigurationUseCase,
+      inject: [
+        REST_REQUEST_CONFIGURATION_REPOSITORY,
+        REST_ENDPOINT_REPOSITORY,
+      ],
+      useFactory: (
+        restRequestConfigurationRepository: RestRequestConfigurationRepository,
+        restEndpointRepository: RestEndpointRepository,
+      ) =>
+        new CreateRestRequestConfigurationUseCase(
+          restRequestConfigurationRepository,
+          restEndpointRepository,
+        ),
+    },
+    {
+      provide: GetRestRequestConfigurationByEndpointIdUseCase,
+      inject: [REST_REQUEST_CONFIGURATION_REPOSITORY],
+      useFactory: (
+        restRequestConfigurationRepository: RestRequestConfigurationRepository,
+      ) =>
+        new GetRestRequestConfigurationByEndpointIdUseCase(
+          restRequestConfigurationRepository,
+        ),
+    },
   ],
 
   exports: [
@@ -163,6 +207,8 @@ import { RestEndpointResolver } from './presentation/graphql/rest-endpoint.resol
     GetRestEndpointsByApiDefinitionUseCase,
     UpdateRestEndpointUseCase,
     DeleteRestEndpointUseCase,
+    CreateRestRequestConfigurationUseCase,
+    GetRestRequestConfigurationByEndpointIdUseCase,
   ],
 })
 export class ApiRegistryModule {}

@@ -94,9 +94,28 @@ model RestEndpoint {
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
-  apiDefinition ApiDefinition @relation(fields: [apiDefinitionId], references: [id], onDelete: Cascade)
+  apiDefinition       ApiDefinition              @relation(fields: [apiDefinitionId], references: [id], onDelete: Cascade)
+  requestConfiguration RestRequestConfiguration?
 
   @@unique([apiDefinitionId, method, path])
   @@index([apiDefinitionId])
   @@map("rest_endpoints")
+}
+
+model RestRequestConfiguration {
+  id         String @id @default(uuid()) @db.Uuid
+  endpointId String @unique @map("endpoint_id") @db.Uuid
+
+  queryParameters Json @map("query_parameters") @db.JsonB
+  pathParameters  Json @map("path_parameters") @db.JsonB
+  headers         Json @db.JsonB
+  authentication  Json @db.JsonB
+  body            Json @db.JsonB
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  endpoint RestEndpoint @relation(fields: [endpointId], references: [id], onDelete: Cascade)
+
+  @@map("rest_request_configurations")
 }
