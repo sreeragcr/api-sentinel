@@ -76,10 +76,29 @@ model ApiDefinition {
   project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
 
   restEndpoints RestEndpoint[]
+  environments   ApiEnvironment[]
 
   @@unique([projectId, name])
   @@index([projectId])
   @@map("api_definitions")
+}
+
+model ApiEnvironment {
+  id              String @id @default(uuid()) @db.Uuid
+  apiDefinitionId String @map("api_definition_id") @db.Uuid
+
+  name        String  @db.VarChar(120)
+  baseUrl     String  @map("base_url") @db.VarChar(500)
+  description String? @db.VarChar(500)
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  apiDefinition ApiDefinition @relation(fields: [apiDefinitionId], references: [id], onDelete: Cascade)
+
+  @@unique([apiDefinitionId, name])
+  @@index([apiDefinitionId])
+  @@map("api_environments")
 }
 
 model RestEndpoint {

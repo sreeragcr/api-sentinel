@@ -17,6 +17,16 @@ type ApiDefinitionModel {
   updatedAt: DateTime!
 }
 
+type ApiEnvironmentModel {
+  apiDefinitionId: ID!
+  baseUrl: String!
+  createdAt: DateTime!
+  description: String
+  id: ID!
+  name: String!
+  updatedAt: DateTime!
+}
+
 """The protocol used by the registered API"""
 enum ApiProtocol {
   GRAPHQL
@@ -51,6 +61,13 @@ input CreateApiDefinitionInput {
   name: String!
   projectId: ID!
   protocol: ApiProtocol!
+}
+
+input CreateApiEnvironmentInput {
+  apiDefinitionId: ID!
+  baseUrl: String!
+  description: String
+  name: String!
 }
 
 input CreateProjectInput {
@@ -124,14 +141,17 @@ enum HttpMethod {
 
 type Mutation {
   createApiDefinition(input: CreateApiDefinitionInput!): ApiDefinitionModel!
+  createApiEnvironment(input: CreateApiEnvironmentInput!): ApiEnvironmentModel!
   createProject(input: CreateProjectInput!): ProjectModel!
   createRestEndpoint(input: CreateRestEndpointInput!): RestEndpointModel!
   createRestRequestConfiguration(input: CreateRestRequestConfigurationInput!): RestRequestConfigurationModel!
   createWorkspace(input: CreateWorkspaceInput!): WorkspaceModel!
+  deleteApiEnvironment(id: ID!): Boolean!
   deleteProject(projectId: ID!): ProjectModel!
   deleteRestEndpoint(id: ID!): Boolean!
   permanentlyDeleteProject(projectId: ID!): Boolean!
   restoreProject(projectId: ID!): ProjectModel!
+  updateApiEnvironment(input: UpdateApiEnvironmentInput!): ApiEnvironmentModel!
   updateProject(input: UpdateProjectInput!): ProjectModel!
   updateRestEndpoint(input: UpdateRestEndpointInput!): RestEndpointModel!
 }
@@ -166,6 +186,8 @@ type ProjectModel {
 type Query {
   apiDefinition(id: ID!): ApiDefinitionModel!
   apiDefinitionsByProject(input: GetApiDefinitionsByProjectInput!): ApiDefinitionListModel!
+  apiEnvironment(id: ID!): ApiEnvironmentModel!
+  apiEnvironmentsByApiDefinition(apiDefinitionId: ID!): [ApiEnvironmentModel!]!
   deletedProjectsByWorkspace(input: GetProjectsByWorkspaceInput!): ProjectListModel!
   health: HealthModel!
   project(id: ID!): ProjectModel!
@@ -260,6 +282,13 @@ type RestRequestConfigurationModel {
   pathParameters: [PathParameterModel!]!
   queryParameters: [QueryParameterModel!]!
   updatedAt: DateTime!
+}
+
+input UpdateApiEnvironmentInput {
+  baseUrl: String!
+  description: String
+  id: ID!
+  name: String!
 }
 
 input UpdateProjectInput {
