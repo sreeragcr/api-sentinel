@@ -70,6 +70,25 @@ input CreateApiEnvironmentInput {
   name: String!
 }
 
+input CreateApiKeyCredentialInput {
+  name: String!
+  value: String!
+  workspaceId: ID!
+}
+
+input CreateBasicCredentialInput {
+  name: String!
+  password: String!
+  username: String!
+  workspaceId: ID!
+}
+
+input CreateBearerCredentialInput {
+  name: String!
+  token: String!
+  workspaceId: ID!
+}
+
 input CreateProjectInput {
   description: String
   name: String!
@@ -96,6 +115,22 @@ input CreateRestRequestConfigurationInput {
 input CreateWorkspaceInput {
   description: String
   name: String!
+}
+
+type CredentialModel {
+  createdAt: DateTime!
+  id: ID!
+  name: String!
+  type: CredentialType!
+  updatedAt: DateTime!
+  workspaceId: ID!
+}
+
+"""Type of credential used for API authentication"""
+enum CredentialType {
+  API_KEY
+  BASIC
+  BEARER
 }
 
 """
@@ -142,6 +177,9 @@ enum HttpMethod {
 type Mutation {
   createApiDefinition(input: CreateApiDefinitionInput!): ApiDefinitionModel!
   createApiEnvironment(input: CreateApiEnvironmentInput!): ApiEnvironmentModel!
+  createApiKeyCredential(input: CreateApiKeyCredentialInput!): CredentialModel!
+  createBasicCredential(input: CreateBasicCredentialInput!): CredentialModel!
+  createBearerCredential(input: CreateBearerCredentialInput!): CredentialModel!
   createProject(input: CreateProjectInput!): ProjectModel!
   createRestEndpoint(input: CreateRestEndpointInput!): RestEndpointModel!
   createRestRequestConfiguration(input: CreateRestRequestConfigurationInput!): RestRequestConfigurationModel!
@@ -188,6 +226,8 @@ type Query {
   apiDefinitionsByProject(input: GetApiDefinitionsByProjectInput!): ApiDefinitionListModel!
   apiEnvironment(id: ID!): ApiEnvironmentModel!
   apiEnvironmentsByApiDefinition(apiDefinitionId: ID!): [ApiEnvironmentModel!]!
+  credential(id: ID!, workspaceId: ID!): CredentialModel!
+  credentialsByWorkspace(workspaceId: ID!): [CredentialModel!]!
   deletedProjectsByWorkspace(input: GetProjectsByWorkspaceInput!): ProjectListModel!
   health: HealthModel!
   project(id: ID!): ProjectModel!

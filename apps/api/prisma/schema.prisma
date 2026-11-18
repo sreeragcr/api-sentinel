@@ -28,6 +28,14 @@ enum HttpMethod {
   @@map("http_method")
 }
 
+enum CredentialType {
+  BEARER
+  BASIC
+  API_KEY
+
+  @@map("credential_type")
+}
+
 model Workspace {
   id          String  @id @default(uuid()) @db.Uuid
   name        String  @db.VarChar(120)
@@ -37,7 +45,8 @@ model Workspace {
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
-  projects Project[]
+  projects    Project[]
+  credentials Credential[]
 
   @@map("workspaces")
 }
@@ -76,7 +85,7 @@ model ApiDefinition {
   project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
 
   restEndpoints RestEndpoint[]
-  environments   ApiEnvironment[]
+  environments  ApiEnvironment[]
 
   @@unique([projectId, name])
   @@index([projectId])
@@ -113,7 +122,7 @@ model RestEndpoint {
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
-  apiDefinition       ApiDefinition              @relation(fields: [apiDefinitionId], references: [id], onDelete: Cascade)
+  apiDefinition        ApiDefinition               @relation(fields: [apiDefinitionId], references: [id], onDelete: Cascade)
   requestConfiguration RestRequestConfiguration?
 
   @@unique([apiDefinitionId, method, path])
@@ -137,4 +146,22 @@ model RestRequestConfiguration {
   endpoint RestEndpoint @relation(fields: [endpointId], references: [id], onDelete: Cascade)
 
   @@map("rest_request_configurations")
+}
+
+model Credential {
+  id          String @id @default(uuid()) @db.Uuid
+  workspaceId String @map("workspace_id") @db.Uuid
+
+  name           String         @db.VarChar(120)
+  type           CredentialType
+  encryptedValue String         @map("encrypted_value") @db.Text
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  @@unique([workspaceId, name])
+  @@index([workspaceId])
+  @@map("credentials")
 }
