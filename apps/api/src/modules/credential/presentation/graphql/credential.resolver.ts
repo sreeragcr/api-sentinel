@@ -12,10 +12,12 @@ import { GraphQLError } from 'graphql';
 import { CreateCredentialUseCase } from '../../application/use-cases/create-credential.use-case.js';
 import { GetCredentialByIdUseCase } from '../../application/use-cases/get-credential-by-id.use-case.js';
 import { GetCredentialsByWorkspaceUseCase } from '../../application/use-cases/get-credentials-by-workspace.use-case.js';
+import { UpdateCredentialUseCase } from '../../application/use-cases/update-credential.use-case.js';
 
 import { DuplicateCredentialError } from '../../application/errors/duplicate-credential.error.js';
 import { CredentialNotFoundError } from '../../application/errors/credential-not-found.error.js';
 import { WorkspaceNotFoundError } from '../../application/errors/workspace-not-found.error.js';
+import { CredentialTypeMismatchError } from '../../application/errors/credential-type-mismatch.error.js';
 
 import { InvalidCredentialError } from '../../domain/entities/credential.entity.js';
 import { CredentialType } from '../../domain/enums/credential-type.enum.js';
@@ -23,6 +25,10 @@ import { CredentialType } from '../../domain/enums/credential-type.enum.js';
 import { CreateBearerCredentialInput } from './inputs/create-bearer-credential.input.js';
 import { CreateBasicCredentialInput } from './inputs/create-basic-credential.input.js';
 import { CreateApiKeyCredentialInput } from './inputs/create-api-key-credential.input.js';
+
+import { UpdateBearerCredentialInput } from './inputs/update-bearer-credential.input.js';
+import { UpdateBasicCredentialInput } from './inputs/update-basic-credential.input.js';
+import { UpdateApiKeyCredentialInput } from './inputs/update-api-key-credential.input.js';
 
 import { CredentialModel } from './models/credential.model.js';
 
@@ -34,7 +40,8 @@ export class CredentialResolver {
     private readonly createCredentialUseCase: CreateCredentialUseCase,
     private readonly getCredentialByIdUseCase: GetCredentialByIdUseCase,
     private readonly getCredentialsByWorkspaceUseCase: GetCredentialsByWorkspaceUseCase,
-  ) {}
+    private readonly updateCredentialUseCase: UpdateCredentialUseCase,
+  ) { }
 
   // --------------------------------------------------
   // CREATE CREDENTIAL MUTATIONS
@@ -79,6 +86,62 @@ export class CredentialResolver {
   ): Promise<CredentialModel> {
     return this.execute(() =>
       this.createCredentialUseCase.execute({
+        workspaceId: input.workspaceId,
+        name: input.name,
+        value: {
+          type: CredentialType.API_KEY,
+          value: input.value,
+        },
+      }),
+    );
+  }
+
+  // --------------------------------------------------
+  // UPDATE CREDENTIAL MUTATIONS
+  // --------------------------------------------------
+
+  @Mutation(() => CredentialModel)
+  async updateBearerCredential(
+    @Args('input') input: UpdateBearerCredentialInput,
+  ): Promise<CredentialModel> {
+    return this.execute(() =>
+      this.updateCredentialUseCase.execute({
+        credentialId: input.credentialId,
+        workspaceId: input.workspaceId,
+        name: input.name,
+        value: {
+          type: CredentialType.BEARER,
+          token: input.token,
+        },
+      }),
+    );
+  }
+
+  @Mutation(() => CredentialModel)
+  async updateBasicCredential(
+    @Args('input') input: UpdateBasicCredentialInput,
+  ): Promise<CredentialModel> {
+    return this.execute(() =>
+      this.updateCredentialUseCase.execute({
+        credentialId: input.credentialId,
+        workspaceId: input.workspaceId,
+        name: input.name,
+        value: {
+          type: CredentialType.BASIC,
+          username: input.username,
+          password: input.password,
+        },
+      }),
+    );
+  }
+
+  @Mutation(() => CredentialModel)
+  async updateApiKeyCredential(
+    @Args('input') input: UpdateApiKeyCredentialInput,
+  ): Promise<CredentialModel> {
+    return this.execute(() =>
+      this.updateCredentialUseCase.execute({
+        credentialId: input.credentialId,
         workspaceId: input.workspaceId,
         name: input.name,
         value: {
@@ -190,6 +253,12 @@ export class CredentialResolver {
     ) {
       throw new GraphQLError(error.message, {
         extensions: { code: 'NOT_FOUND' },
+      });
+    }
+
+    if (error instanceof CredentialTypeMismatchError) {
+      throw new GraphQLError(error.message, {
+        extensions: { code: 'BAD_USER_INPUT' },
       });
     }
 

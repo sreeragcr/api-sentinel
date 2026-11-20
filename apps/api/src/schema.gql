@@ -190,6 +190,9 @@ type Mutation {
   permanentlyDeleteProject(projectId: ID!): Boolean!
   restoreProject(projectId: ID!): ProjectModel!
   updateApiEnvironment(input: UpdateApiEnvironmentInput!): ApiEnvironmentModel!
+  updateApiKeyCredential(input: UpdateApiKeyCredentialInput!): CredentialModel!
+  updateBasicCredential(input: UpdateBasicCredentialInput!): CredentialModel!
+  updateBearerCredential(input: UpdateBearerCredentialInput!): CredentialModel!
   updateProject(input: UpdateProjectInput!): ProjectModel!
   updateRestEndpoint(input: UpdateRestEndpointInput!): RestEndpointModel!
 }
@@ -329,6 +332,28 @@ input UpdateApiEnvironmentInput {
   description: String
   id: ID!
   name: String!
+}
+
+input UpdateApiKeyCredentialInput {
+  credentialId: ID!
+  name: String!
+  value: String!
+  workspaceId: ID!
+}
+
+input UpdateBasicCredentialInput {
+  credentialId: ID!
+  name: String!
+  password: String!
+  username: String!
+  workspaceId: ID!
+}
+
+input UpdateBearerCredentialInput {
+  credentialId: ID!
+  name: String!
+  token: String!
+  workspaceId: ID!
 }
 
 input UpdateProjectInput {

@@ -5,6 +5,7 @@ import type { CredentialValue } from '../../domain/types/credential-value.type.j
 import { CredentialNotFoundError } from '../errors/credential-not-found.error.js';
 import { DuplicateCredentialError } from '../errors/duplicate-credential.error.js';
 import { WorkspaceNotFoundError } from '../errors/workspace-not-found.error.js';
+import { CredentialTypeMismatchError } from '../errors/credential-type-mismatch.error.js';
 
 import type { CredentialRepository } from '../ports/credential.repository.js';
 import type { CredentialEncryptionPort } from '../ports/credential-encryption.port.js';
@@ -22,7 +23,7 @@ export class UpdateCredentialUseCase {
     private readonly credentialRepository: CredentialRepository,
     private readonly encryption: CredentialEncryptionPort,
     private readonly workspaceExistenceChecker: WorkspaceExistenceChecker,
-  ) {}
+  ) { }
 
   async execute(input: UpdateCredentialInput): Promise<Credential> {
     const workspaceExists =
@@ -42,9 +43,7 @@ export class UpdateCredentialUseCase {
     }
 
     if (credential.type !== input.value.type) {
-      throw new Error(
-        'Credential type cannot be changed during an update',
-      );
+      throw new CredentialTypeMismatchError();
     }
 
     const name = input.name.trim();

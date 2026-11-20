@@ -7,6 +7,7 @@ import { CredentialResolver } from './credential.resolver.js';
 import type { CreateCredentialUseCase } from '../../application/use-cases/create-credential.use-case.js';
 import type { GetCredentialByIdUseCase } from '../../application/use-cases/get-credential-by-id.use-case.js';
 import type { GetCredentialsByWorkspaceUseCase } from '../../application/use-cases/get-credentials-by-workspace.use-case.js';
+import type { UpdateCredentialUseCase } from '../../application/use-cases/update-credential.use-case.js';
 
 import {
   Credential,
@@ -24,6 +25,7 @@ describe('CredentialResolver', () => {
   const getByIdExecute = vi.fn<GetCredentialByIdUseCase['execute']>();
   const getByWorkspaceExecute =
     vi.fn<GetCredentialsByWorkspaceUseCase['execute']>();
+  const updateExecute = vi.fn<UpdateCredentialUseCase['execute']>();
 
   const createCredentialUseCase = {
     execute: createExecute,
@@ -36,6 +38,10 @@ describe('CredentialResolver', () => {
   const getCredentialsByWorkspaceUseCase = {
     execute: getByWorkspaceExecute,
   } as unknown as GetCredentialsByWorkspaceUseCase;
+
+  const updateCredentialUseCase = {
+    execute: updateExecute,
+  } as unknown as UpdateCredentialUseCase;
 
   let resolver: CredentialResolver;
 
@@ -58,11 +64,13 @@ describe('CredentialResolver', () => {
     createExecute.mockReset();
     getByIdExecute.mockReset();
     getByWorkspaceExecute.mockReset();
+    updateExecute.mockReset();
 
     resolver = new CredentialResolver(
       createCredentialUseCase,
       getCredentialByIdUseCase,
       getCredentialsByWorkspaceUseCase,
+      updateCredentialUseCase,
     );
   });
 
@@ -162,6 +170,122 @@ describe('CredentialResolver', () => {
 
       expect(result.type).toBe(CredentialType.API_KEY);
       expect(result.name).toBe(credential.name);
+    });
+  });
+
+  // --------------------------------------------------
+  // UPDATE BEARER CREDENTIAL MUTATION
+  // --------------------------------------------------
+
+  describe('updateBearerCredential()', () => {
+    const input = {
+      credentialId,
+      workspaceId,
+      name: 'Updated Bearer Token',
+      token: 'new-secret-bearer-token',
+    };
+
+    it('should update a Bearer credential successfully', async () => {
+      const credential = createCredential(
+        CredentialType.BEARER,
+        input.name,
+      );
+
+      updateExecute.mockResolvedValue(credential);
+
+      const result = await resolver.updateBearerCredential(input);
+
+      expect(updateExecute).toHaveBeenCalledWith({
+        credentialId: input.credentialId,
+        workspaceId: input.workspaceId,
+        name: input.name,
+        value: {
+          type: CredentialType.BEARER,
+          token: input.token,
+        },
+      });
+
+      expect(result.id).toBe(credential.id);
+      expect(result.name).toBe(input.name);
+      expect(result.type).toBe(CredentialType.BEARER);
+    });
+  });
+
+  // --------------------------------------------------
+  // UPDATE BASIC CREDENTIAL MUTATION
+  // --------------------------------------------------
+
+  describe('updateBasicCredential()', () => {
+    const input = {
+      credentialId,
+      workspaceId,
+      name: 'Updated Basic Authentication',
+      username: 'updated-user',
+      password: 'new-secret-password',
+    };
+
+    it('should update a Basic credential successfully', async () => {
+      const credential = createCredential(
+        CredentialType.BASIC,
+        input.name,
+      );
+
+      updateExecute.mockResolvedValue(credential);
+
+      const result = await resolver.updateBasicCredential(input);
+
+      expect(updateExecute).toHaveBeenCalledWith({
+        credentialId: input.credentialId,
+        workspaceId: input.workspaceId,
+        name: input.name,
+        value: {
+          type: CredentialType.BASIC,
+          username: input.username,
+          password: input.password,
+        },
+      });
+
+      expect(result.id).toBe(credential.id);
+      expect(result.name).toBe(input.name);
+      expect(result.type).toBe(CredentialType.BASIC);
+    });
+  });
+
+  // --------------------------------------------------
+  // UPDATE API KEY CREDENTIAL MUTATION
+  // --------------------------------------------------
+
+  describe('updateApiKeyCredential()', () => {
+    const input = {
+      credentialId,
+      workspaceId,
+      name: 'Updated External API Key',
+      value: 'new-secret-api-key',
+    };
+
+    it('should update an API Key credential successfully', async () => {
+      const credential = createCredential(
+        CredentialType.API_KEY,
+        input.name,
+      );
+
+      updateExecute.mockResolvedValue(credential);
+
+      const result = await resolver.updateApiKeyCredential(input);
+
+      expect(updateExecute).toHaveBeenCalledWith({
+        credentialId: input.credentialId,
+        workspaceId: input.workspaceId,
+        name: input.name,
+        value: {
+          type: CredentialType.API_KEY,
+          value: input.value,
+        },
+      });
+
+      expect(result.id).toBe(credential.id);
+      expect(result.name).toBe(input.name);
+      expect(result.type).toBe(CredentialType.API_KEY);
     });
   });
 
@@ -278,6 +402,27 @@ describe('CredentialResolver', () => {
       });
     });
 
+    it('should translate duplicate credential errors during update into GraphQL CONFLICT', async () => {
+      const updateInput = {
+        credentialId,
+        workspaceId,
+        name: 'Duplicate Credential',
+        token: 'new-secret-token',
+      };
+
+      updateExecute.mockRejectedValue(
+        new DuplicateCredentialError(workspaceId, updateInput.name),
+      );
+
+      await expect(
+        resolver.updateBearerCredential(updateInput),
+      ).rejects.toMatchObject({
+        extensions: {
+          code: 'CONFLICT',
+        },
+      });
+    });
+
     it('should translate workspace not found error into GraphQL NOT_FOUND', async () => {
       createExecute.mockRejectedValue(
         new WorkspaceNotFoundError(workspaceId),
@@ -342,6 +487,24 @@ describe('CredentialResolver', () => {
       getByIdExecute.mockResolvedValue(credential);
 
       const result = await resolver.getCredential(credentialId, workspaceId);
+
+      expect(result).not.toHaveProperty('encryptedValue');
+      expect(result).not.toHaveProperty('token');
+      expect(result).not.toHaveProperty('password');
+      expect(result).not.toHaveProperty('value');
+    });
+
+    it('should never expose encrypted credential values in update responses', async () => {
+      const credential = createCredential(CredentialType.BEARER);
+
+      updateExecute.mockResolvedValue(credential);
+
+      const result = await resolver.updateBearerCredential({
+        credentialId,
+        workspaceId,
+        name: 'Updated Bearer Token',
+        token: 'new-secret-token',
+      });
 
       expect(result).not.toHaveProperty('encryptedValue');
       expect(result).not.toHaveProperty('token');
